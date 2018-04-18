@@ -1,0 +1,536 @@
+<apex:page showHeader="false" standardStylesheets="false" docType="html-5.0" Controller="Search_Member1">
+ 
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <title>Do Search Member</title>
+        <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport" />
+
+        <apex:stylesheet value="{!URLFOR($Resource.SearchMemberRes, 'css/bootstrap.min.css')}"/>
+        <apex:stylesheet value="{!URLFOR($Resource.SearchMemberRes, 'css/style.css')}"/>
+        <apex:stylesheet value="{!URLFOR($Resource.SearchMemberRes, 'css/bootstrap-datepicker.css')}"/>
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+        <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,500,600,700" rel="stylesheet" />
+    </head>
+    <body>
+         <apex:form >
+         
+
+       <!--
+         <header>
+           <div class="container">
+<apex:image url="{!URLFOR($Resource.SearchMemberRes, 'images/logo.png')}" alt="Gesa Logo"/>
+<apex:pageMessages id="errors" />
+</div>
+</header>-->
+
+         <section class="container">
+
+
+
+             <ul class="nav nav-tabs">
+                 <li class="active"><a data-toggle="pill" href="#search-member-tab">Do Search Member</a></li>
+                 <li> 
+                 <a data-toggle="pill" href="#search-appl-tab">Search Application</a></li>
+             </ul>
+
+             <div class="tab-content">
+                 <div id="search-member-tab" class="tab-pane fade in active">
+                     <div class="content-box">
+
+                         <h4 class="section-head">ReSearch Criteria <i class="fa fa-chevron-down filter-toggle pull-right" aria-hidden="true"></i></h4>
+
+                         <div class="form-section filter-search"  id="appcriteria">
+
+                             
+                             <div class="row">
+                                 <div class="form-group col-md-3">
+                                     <label for="text">Last Name</label>
+                                     <apex:inputText value="{!lastnameQuery}" styleClass="form-control"/>
+
+                                 </div>
+                                 <div class="form-group col-md-3">
+                                     <label for="text" >First Name</label>
+                                     <apex:inputText value="{!firstnameQuery}" styleClass="form-control"/>
+                                 </div>
+
+                                 <div class="form-group col-md-3">
+                                     <label for="text">SSN(Full)</label>
+                                     <apex:inputText value="{!SSNLast4Query}" styleClass="form-control"/>
+                                 </div>
+                                 <div class="form-group col-md-3">
+                                     <label for="text">Account Number</label>
+                                     <apex:inputText styleClass="form-control"/>
+                                 </div>
+                             </div>
+                             
+                              <div class="row">
+                                  <div class="form-group col-md-3">
+                                     <label for="text">Member Number</label>
+                                     <apex:inputText styleClass="form-control"/>
+                                 </div>
+                                  <div class="form-group col-md-3">
+                                     <label for="text">Person Number</label>
+                                     <apex:inputText styleClass="form-control"/>
+                                 </div>
+                                  <div class="form-group col-md-3">
+                                     <label for="text">Phone Number</label>
+                                     <apex:inputText styleClass="form-control"/>
+                                 </div>
+                             </div>
+
+
+                             <div class="row">
+                                 <div class="form-group col-md-12">
+                                    <!-- <button type="submit" class="btn btn-primary">Search</button>
+                                     <button type="submit" class="btn btn-secondary">Clear</button>-->
+                                    <apex:commandlink action="{!executeSearch}" styleClass="btn btn-primary" value="Search" status="StatusId"  reRender="results,errors"/>
+                                       &nbsp;&nbsp;&nbsp;<apex:commandlink action="{!clearAll}" value="Claire All" styleClass="btn btn-secondary"  reRender="results,errors,criteria,script,entireform"/>
+                                    
+                                 </div>
+                             </div>
+
+
+
+
+
+                         </div>
+
+                     </div>
+
+                     <div class="content-box">
+
+                         <h4 class="section-head">results <span class="pull-right">Total Search Results : 1</span></h4>
+                         <div class="table-responsive">
+                             <table class="table table-hover">
+                                 <thead>
+                                     <tr>
+                                         <th>S No.</th>
+                                         <th>Person Number</th>
+                                         <th>Membership Number</th>
+                                         <th>First Name</th>
+                                         <th>Last Name</th>
+                                         <th>SSN</th>
+                                         <th>Email</th>
+                                         <th>City</th>
+                                         <th>State</th>
+                                         <th>Zipcode</th>
+                                         <th>Phone</th>
+                                     </tr>
+                                 </thead>
+                                 <tbody>
+                                     <apex:repeat value="{!accWrapperList}" var="wrapper" >
+                                     <tr>
+                                         <td>{!wrapper.count}</td>
+                                         <td> <apex:outputPanel rendered="{!wrapper.acc.Name == 'PN700999'}" >
+                                            <apex:outputLink value="/{!wrapper.acc.id}" >{!wrapper.acc.Name}</apex:outputLink>
+                                        </apex:outputPanel>
+                                        <apex:outputPanel rendered="{!wrapper.acc.Name != 'PN700999'}" >
+                                            <apex:outputLink value="/{!wrapper.acc.id}" >{!wrapper.acc.Name}</apex:outputLink>
+                                        </apex:outputPanel></td>
+                                         <td> <apex:outputLink value="/{!wrapper.acc.id}"> {!wrapper.memberShipNumber} </apex:outputLink></td>
+                                         <td> <apex:outputLink value="/{!wrapper.acc.id}"> {!wrapper.acc.First_Name__c} </apex:outputLink></td>
+                                         <td> <apex:outputLink value="/{!wrapper.acc.id}"> {!wrapper.acc.Last_Name__c} </apex:outputLink></td>
+                                         <td><apex:outputLink value="/{!wrapper.acc.id}"> {!wrapper.acc.SSN__c} </apex:outputLink></td>
+                                         <td>john@example.com</td>
+                                         <td>San Diego</td>
+                                         <td>California</td>
+                                         <td>123852</td>
+                                         <td>+1 701-258-9652</td>
+                                     </tr>
+                                     
+                                     </apex:repeat>
+                                 </tbody>
+                             </table>
+                         </div>
+                     </div>
+                 </div>
+                 <div id="search-appl-tab" class="tab-pane fade" >
+                     <div class="content-box">
+                         <h4 class="section-head">ReSearch Criteria</h4>
+                         <div class="form-section filter-search">
+                       <apex:outputPanel id="criteria1">  
+                         <div class="row">
+                                 <div class="form-group col-md-3">
+                                     <label for="text">Application Number</label>
+                                     <apex:inputText value="{!ApplicationQuery }" styleClass="form-control" onkeypress="return noenter(event);"/>
+
+                                 </div>
+                                 <div class="form-group col-md-3">
+                                     <label for="text">From</label>
+                                     <apex:inputText value="{!FromDate}" id="fromDateId" styleClass="form-control datepicker"/>
+                                 </div> 
+                                 <div class="form-group col-md-3">
+                                     <label for="text">To</label>
+                                     <apex:inputText value="{!ToDate}" id="toDateId" styleClass="form-control datepicker"/>
+                                 </div>                            
+                             </div>
+                             
+                        
+                           
+                           
+                             <div class="row">
+                                 <div class="form-group col-md-3">
+                                     <label for="text">Last Name</label>
+                                     <apex:inputText value="{!applastnameQuery}" styleClass="form-control" onkeypress="return noenter(event);"/>
+
+                                 </div>
+                                 <div class="form-group col-md-3">
+                                     <label for="text">First Name</label>
+                                     <apex:inputText value="{!appfirstnameQuery }" styleClass="form-control" onkeypress="return noenter(event);"/>
+                                 </div>
+
+                                 <div class="form-group col-md-3">
+                                     <label for="text">SSN</label>
+                                     <apex:inputText value="{!appssnLast4Query}" styleClass="form-control" onkeypress="return noenter(event);"/>
+                                 </div>
+                                <div class="form-group col-md-3">
+                                     <!--<label for="text">Phone Number</label>
+                                     <apex:inputText value="{!phoneNumberQuery}" styleClass="form-control"  onChange="formatPhone(this);" onkeypress="return noenter(event);"/>
+                                 --></div>
+                                
+                             </div>
+                             
+                         
+  </apex:outputPanel>
+                             <div class="row">
+                                 <div class="form-group col-md-12">
+                                   <!--  <button type="submit" class="btn btn-primary">Search</button>
+                                     <button type="submit" class="btn btn-secondary">Clear</button>-->
+                                     <!-- <apex:commandlink action="{!executeAppSearch}" styleClass="btn btn-primary" value="Search" status="StatusId"  reRender="results,errors"/>-->
+                                      <apex:commandlink action="{!search_Application2}" styleClass="btn btn-primary" value="Search" status="StatusId"  reRender="results,errors"/>
+                                      &nbsp;&nbsp;&nbsp; <apex:commandlink action="{!appclearAll}" id="subid"  value="Claire All" styleClass="btn btn-secondary"  reRender="results,errors,appcriteria,criteria1,script"/>
+                                
+                                 </div>
+                             </div>
+
+
+
+
+
+                         </div>
+                     </div>
+                     <apex:outputpanel id="results">
+                      <div class="content-box" id="results">
+
+                         <h4 class="section-head">results <span class="pull-right">Total Search Results : {!appTotalResults}</span></h4>
+                        <div class="Applications">
+                            <apex:pageBlock mode="edit" id="appresults">
+                                <apex:actionStatus id="appStatusId" layout="inline">
+                                    <apex:facet name="start" > 
+                                        <img src="/img/loading.gif" /> 
+                                        <font size="2" color="blue">Searching.. Please Wait..</font>                  
+                                    </apex:facet>
+                                </apex:actionStatus>
+                                <div class="table-responsive">
+                                <apex:dataTable value="{!appWrapperList}" var="wrap" styleClass="table table-hover">
+                                    <apex:column headerValue="Sr #" value="{!wrap.count}" />
+                                    <apex:column headerValue="SF App #">
+                                        <apex:outputLink value="/{!wrap.app.id}"> {!wrap.app.App_Number__c}</apex:outputLink>
+                                    </apex:column>
+                                  <!--  <apex:column headerValue="L360 App #">
+                                        <apex:outputLink value="/{!wrap.app.id}"> {!wrap.app.TF4SF__External_App_ID__c}</apex:outputLink>
+                                    </apex:column>-->
+                                    <apex:column headerValue="Member #">
+                                        <apex:outputLink value="/{!wrap.app.id}"> {!wrap.app.Membership_Number__c}</apex:outputLink>
+                                    </apex:column>
+                                    <apex:column headerValue="Name">
+                                        <apex:outputLink value="/{!wrap.app.id}"> {!wrap.app.TF4SF__First_Name__c}&nbsp;{!wrap.app.TF4SF__Last_Name__c}</apex:outputLink>
+                                    </apex:column>
+                                    <apex:column headerValue="Product">
+                                        <apex:outputLink value="/{!wrap.app.id}"> {!wrap.productName} </apex:outputLink>
+                                    </apex:column>
+                                    <apex:column headerValue="Primary Product Status">
+                                        <apex:outputLink value="/{!wrap.app.id}"> {!wrap.app.TF4SF__Application_Status__c} </apex:outputLink>
+                                    </apex:column> 
+                                   <!-- <apex:column headerValue="Decision">
+                                        <apex:outputLink value="/{!wrap.app.id}"> {!wrap.decision} </apex:outputLink>
+                                    </apex:column>
+                                    <apex:column headerValue="Current Branch">
+                                        <apex:outputLink value="/{!wrap.app.id}"> {!wrap.app.TF4SF__Current_Branch_Name__c} </apex:outputLink>
+                                    </apex:column>
+                                    <apex:column headerValue="Expiration Date">
+                                        <apex:outputLink value="/{!wrap.app.id}"> 
+                                        
+                                            <apex:outputField value="{!wrap.app.TF4SF__Custom_DateTime1__c}"/>
+                                        </apex:outputLink>
+                                    </apex:column>-->
+                                    <!-- <apex:column headerValue="Created Date">
+                                        <apex:outputLink value="/{!wrap.app.id}"> {!wrap.app.TF4SF__Created_Timestamp__c} </apex:outputLink>
+                                    </apex:column>
+                                    <apex:column headerValue="Submitted Date">
+                                        <apex:outputLink value="/{!wrap.app.id}"> {!wrap.app.TF4SF__Submitted_Timestamp__c} </apex:outputLink>
+                                    </apex:column>  -->                                 
+                                </apex:dataTable>
+                                </div>
+                                <div class="pull-right">
+                                <!-- <apex:panelGrid columns="4" style="margin-right: -10px;"> -->
+                                
+                                <ul class="pagination">
+                               
+                                <li>                                    <apex:commandLink styleClass="slds-button slds-button--brand" action="{!appfirstPage}" reRender="appresults" rendered="{!apphasPrevious}">First &nbsp; &nbsp;</apex:commandlink>
+</li>
+                                <li>                                    <apex:commandLink styleClass="slds-button slds-button--brand" action="{!apppreviousPage}" reRender="appresults" rendered="{!apphasPrevious}">Previous &nbsp; &nbsp;</apex:commandlink>
+</li>
+                                <li>                                    <apex:commandLink styleClass="slds-button slds-button--brand" action="{!appnextPage}" reRender="appresults" rendered="{!apphasNext}">Next &nbsp;</apex:commandlink>
+                                   
+                                <li> <apex:commandLink styleClass="slds-button slds-button--brand" action="{!applastPage}" reRender="appresults" rendered="{!apphasNext}">Last </apex:commandlink>
+</li></li>
+                                </ul>
+                                    
+                                </div>
+                                 <div class="clearfix"></div>
+                                <!-- </apex:panelGrid> -->
+                                <apex:outputPanel rendered="{!assc != null}" >
+                                  <!-- <p> <b>Total Search Results:</b> {!appTotalResults} </p>-->
+                                    <p> <b>Search Result Page# </b>{!appPageNumber} / {!appTotalPages}</p>
+                                </apex:outputPanel>
+                                <apex:pageMessage rendered="{!appsearchMsg}" strength="3" severity="info" title="Search Not Found - Enter a new Search criteria or Contact your manager. "><font size="3"></font> </apex:pageMessage>
+                                  <!-- <apex:outputLink value="/apex/StartApplication" styleClass="btn btn-primary StartAppbtnId slds-button slds-button--brand" rendered="{!appsearchMsg}">Start Application</apex:outputLink>-->
+                                    </apex:pageBlock>
+                                     
+                     
+                        </div>
+                     </div>
+                          
+                     </apex:outputpanel>
+                     </div>
+             </div>
+
+           
+           
+
+
+</section>
+
+      
+   <apex:includeScript value="https://code.jquery.com/jquery-3.2.1.min.js"/>
+   <apex:includeScript value="{!URLFOR($Resource.SearchMemberRes, 'js/bootstrap.min.js')}"/>
+   <apex:includeScript value="{!URLFOR($Resource.SearchMemberRes, 'js/bootstrap-datepicker.min.js')}"/>
+   <script type="text/javascript">
+  function noenter(e){
+    if(window.event){
+    key = window.event.keyCode; //IE
+    } else{
+    key = e.which; //firefox
+    }
+    if(key == 13) {
+    var ele=document.getElementById('j_id0:j_id6:j_id60');
+ele.click();
+    return false;
+    } else{
+    return true;
+    }
+   }
+</script>
+   
+    <script type="text/javascript">
+        function formatPhone(obj) {
+            var numbers = obj.value.replace(/\D/g, ''),
+        char = { 0: '(', 3: ') ', 6: '-' };
+            obj.value = '';
+            for (var i = 0; i < numbers.length; i++) {
+                obj.value += (char[i] || '') + numbers[i];
+            }
+        }
+    </script>
+   
+   
+     <apex:outputPanel id="script">
+    <script type="text/javascript">
+    $(document).ready(function() {    
+        $(document).on('keyup',function(e) {
+            if(e.keyCode == 13) {
+                //alert('You pressed enter!');
+                var ssn = $('.ssnlast4').val();
+                if(ssn.length == 0 || ssn.length == 4) {
+                    $('.accountbuttonId').click();    
+                } else if(ssn.length != 0 && ssn.length < 4) {
+
+                }
+                
+            }
+            if(e.keyCode == 27) {
+                //alert('You pressed esc!');
+                $('.cancelId').click();
+            }
+        });
+    });
+
+    $.fn.regexMask = function(mask) {
+    $(this).keypress(function (event) {
+        if (!event.charCode) return true;
+        var part1 = this.value.substring(0, this.selectionStart);
+        var part2 = this.value.substring(this.selectionEnd, this.value.length);
+        if (!mask.test(part1 + String.fromCharCode(event.charCode) + part2))
+            return false;
+        });
+    };
+
+    $(document).ready(function() {
+        var mask = new RegExp('^[A-Za-z]*$')
+        $('.fname').regexMask(mask)
+        $('.lname').regexMask(mask)
+        var mask2 = new RegExp('^[0-9]*$')
+        $('.ssnlast4').regexMask(mask2)
+        //var mask3 = new RegExp('/^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/')
+        //$('.email').regexMask(mask3)
+    });
+    // calling this function to remove the contents of search results
+    function clearContents(elementID) {
+        document.getElementById(elementID).innerHTML = "";
+    }
+
+    function refreshForm() {
+        console.log('refreshForm called');
+        window.parent.location = window.parent.location.href;
+    }
+
+
+    // $(function() {
+    //     $(".ssnL").hide(); //Hide Initially
+    //     $(".ssnlast4").change(function() {
+    //     var input = $(this).val();
+
+    //     var span = $(".ssnL"); //Get next span element
+
+    //     if (input.length == 0) {
+    //         span.text("").show();//Clear Text and hide            
+    //         //$(".accP").prop('disabled',false);
+    //         return;
+    //     }
+        
+    //     if (input.length != 4) {
+    //       span.text("Enter Last 4 of SSN").show(); //Set Text and Show
+    //       //$(".accP").prop('disabled',true);
+    //       return;
+    //     }
+
+    //     span.text('').hide();//Clear Text and hide
+    //     //$(".accP").prop('disabled',false);
+    //     });
+    // });
+
+    $(document).on('ready',function(e) {
+        // jquery function to validate SSN Last 4
+        // $('.ssnLast4').blur(function (e) { 
+        //     this.value = this.value.replace(/[^0-9]/g,'');
+        // });
+
+        $('.cancelId').click(function() {
+            $('.email').val('');
+            console.log('Clearing email ');
+        }) ;
+        
+
+    });
+        
+    $(document).ready(function(){
+    
+    $('.datepicker').on('show', function(e){
+            if ( e.date ) {
+                 $(this).data('stickyDate', e.date);
+            }
+            else {
+                 $(this).data('stickyDate', null);
+            }
+        });
+        
+        $('.datepicker').on('hide', function(e){
+            var stickyDate = $(this).data('stickyDate');
+        
+            if ( !e.date && stickyDate ) {
+                $(this).datepicker('setDate', stickyDate);
+                $(this).data('stickyDate', null);
+            }
+        });
+    
+        $('ul.tabs li').click(function(){
+            var tab_id = $(this).attr('data-tab');
+
+            $('ul.tabs li').removeClass('current');
+            $('.tab-content').removeClass('current');
+
+            $(this).addClass('current');
+            $("#"+tab_id).addClass('current');
+        });
+
+        var dtToday = new Date();
+    
+        var month = dtToday.getMonth() + 1;
+        var day = dtToday.getDate();
+        var year = dtToday.getFullYear();
+        if(month < 10)
+            month = '0' + month.toString();
+        if(day < 10)
+            day = '0' + day.toString();
+        
+        var maxDate = year + '-' + month + '-' + day;
+        
+        $('.todaydate').attr('max', maxDate);
+        $('.todaydate').attr('value', maxDate);
+        
+        var future = new Date();
+        future.setDate(future.getDate() - 90);
+
+        var pmonth = future.getMonth() + 1;
+        var pday = future.getDate();
+        var pyear = future.getFullYear();
+        if(pmonth < 10)
+            pmonth = '0' + pmonth.toString();
+        if(pday < 10) 
+            pday = '0' + pday.toString();
+        
+        
+        var minDate = pyear + '-' + pmonth + '-' + pday;
+        $('.prevdate').attr('max', maxDate);
+        $('.prevdate').attr('value', minDate);
+        
+
+     
+        $('.entireForm').validate();             
+         
+        $('.ssnlast4').rules("add",{
+            minlength: 4
+        });
+
+        $('.mnumber').rules("add",{
+            number: true    
+        });     
+        
+        $('.email').rules("add",{
+            email: true
+        });   
+
+        /* Customised the messages */
+       // jQuery.validator.messages.required = "You better have entered a value.. or else!";
+        //jQuery.validator.messages.equalTo = "No silly, you're supposed to type the same set of characters AGAIN.";   
+        
+    });
+    
+    </script>
+    <script>
+        $(document).ready(function () {
+            $('.filter-toggle').click(function(){
+                $('.filter-search').slideToggle();
+                $(this).toggleClass("fa-chevron-down fa-chevron-up");
+            });
+            $('.datepicker').datepicker({
+                calendarWeeks: false,
+                autoclose: true,
+                todayHighlight: true,
+                toggleActive: true
+            });
+        });
+   </script>
+
+    </apex:outputPanel>
+</apex:form>
+    </body>
+</html>
+
+ 
+ 
+</apex:page>

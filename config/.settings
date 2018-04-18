@@ -1,0 +1,29 @@
+{
+    "projectName": "project1",
+    "username": "kaushal.shah@terafinainc.com.keypoint.dev",
+    "id": "550229c0-4242-11e8-8b2f-734ee8757830",
+    "namespace": "",
+    "orgType": "developer",
+    "loginUrl": "https://login.salesforce.com/",
+    "instanceUrl": "https://keypoint-dev-dev-ed.my.salesforce.com",
+    "workspace": "/Users/kaushal/work2/Keypoint-Dev",
+    "subscription": [
+        "ApexClass",
+        "ApexComponent",
+        "ApexPage",
+        "ApexTrigger",
+        "AppMenu",
+        "CustomLabels",
+        "CustomMetadata",
+        "CustomObject",
+        "CustomObjectTranslation",
+        "CustomSite",
+        "Layout",
+        "Letterhead",
+        "Queue",
+        "QuickAction",
+        "Report",
+        "StaticResource",
+        "Workflow"
+    ]
+}
