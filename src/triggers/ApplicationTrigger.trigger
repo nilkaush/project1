@@ -1,6 +1,6 @@
 trigger ApplicationTrigger on TF4SF__Application__c (after update, before update) {
 	if (trigger.isAfter && trigger.isUpdate) {
-		ApplicationHandler.sendEmailProdStatus(trigger.new, trigger.oldMap);
+		ApplicationHandler. sendEmailProdStatus(trigger.new, trigger.oldMap);
 	}
 
 	if (trigger.isBefore && trigger.isUpdate) {
