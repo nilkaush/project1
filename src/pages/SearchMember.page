@@ -51,7 +51,7 @@
            <div id="search-member-tab" class="tab-pane fade in active">
              <div class="content-box">
 
-               <h4 class="section-head">ReSearch Criteria <i class="fa fa-chevron-down filter-toggle pull-right" aria-hidden="true"></i></h4>
+               <h4 class="section-head">Search Criteria <i class="fa fa-chevron-down filter-toggle pull-right" aria-hidden="true"></i></h4>
 
                <div class="form-section filter-search"  id="appcriteria">
 
