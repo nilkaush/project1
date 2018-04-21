@@ -48,6 +48,7 @@ global with sharing class OnlineBankingPublicController {
 		String ipaddress = req.headers.get('X-Salesforce-SIP');
 		String productValue;
 		String subProductValue;
+		String subProductDescription;
 		String body = req.requestBody.toString(); 
 		System.debug('length: ' + body.length() + '; body1: ' + body);
 		String jsonKey = 'memInfo';
@@ -79,13 +80,16 @@ global with sharing class OnlineBankingPublicController {
 			//if (String.isNotBlank(pc.TF4SF__Sub_Product_Code__c)) {
 				subProductValue = pc.TF4SF__Sub_Product__c;
 				System.debug('the PC is ' + pc.TF4SF__Sub_Product__c);
-			//}                     
+				if (String.isNotBlank(pc.TF4SF__Description__c)) { subProductDescription = pc.TF4SF__Description__c; }
+				System.debug('subProductDescription' + subProductDescription);
+			//}
 		}
 
 		System.debug('productValue: ' + productValue + '; subProductValue: ' + subProductValue);
 		TF4SF__Application__c app = new TF4SF__Application__c(
 			TF4SF__Product__c = productValue,
 			TF4SF__Sub_Product__c = subProductValue,
+			TF4SF__Sub_Product_Description__c = subProductDescription,
 			//TF4SF__Campaign_Id__c = campaignId,
 			TF4SF__Special_Promo_Code__c = PromoCode,
 			TF4SF__Created_Channel__c = 'Online Banking',
@@ -145,12 +149,12 @@ global with sharing class OnlineBankingPublicController {
 						Id_ExpirationDate = String.valueOf(u1.get('expiration_date'));
 						Id_IssueDate = String.valueOf(u1.get('issue_date'));
 					}
-				
+
 					Map<String, Object> o1 = (Map<String, Object>)l.get('primary_occupancy_address');
 					System.debug('primary_occupancy_address ' + o1);
 					List<String> tt = String.valueOf(o1.get('address_lines')).split(',');
 
-					for (String t1 : tt){
+					for (String t1 : tt) {
 						System.debug('address_lines ' + t1.replace('(', '').replace(')', ''));
 						StreetAddress = t1.replace('(', '').replace(')', '') + '\n';
 					}
@@ -188,6 +192,7 @@ global with sharing class OnlineBankingPublicController {
 				app.TF4SF__Middle_Name__c = MiddleName;
 				app.TF4SF__Last_Name__c = LastName;
 				//app.Suffix__c = ud.Suffix;
+				app.TF4SF__Is_Member__c = true;
 				app.TF4SF__Street_Address_1__c = StreetAddress;
 				//app.TF4SF__Street_Address_2__c = ud.Address2;
 				app.TF4SF__City__c = City;
@@ -197,9 +202,15 @@ global with sharing class OnlineBankingPublicController {
 				//app.Secondary_Phone_Number__c = ud.WorkPhone;
 				app.TF4SF__Email_Address__c = PrimaryEmail;
 				app.TF4SF__IP_Address__c = ipaddress;
-				
+
 				List<String> dob_List = DateOfBirth.split('-');
 				DateOfBirth = dob_List[1] + '/' + dob_List[2] + '/' + dob_List[0];
+
+				List<String> expiry_date_List = Id_ExpirationDate.split('-');
+				Id_ExpirationDate = expiry_date_List[1] + '/' + expiry_date_List[2] + '/' + expiry_date_List[0];
+
+				List<String> issue_date_List = Id_IssueDate.split('-');
+				Id_IssueDate = issue_date_List[1] + '/' + issue_date_List[2] + '/' + issue_date_List[0];
 			}
 		} catch (Exception e) {
 			//Unable to parse encrypted data - fall through and create an application with no prefill data:
@@ -221,9 +232,18 @@ global with sharing class OnlineBankingPublicController {
 			TF4SF__Identity_Information__c iden = new TF4SF__Identity_Information__c(
 				TF4SF__Application__c = app.Id,
 				TF4SF__Date_of_Birth__c = DateOfBirth,
-				TF4SF__SSN_Prime__c = SSNDisplay
+				TF4SF__SSN_Prime__c = SSNDisplay,
+				TF4SF__Citizenship__c = ImmigrationStatus
 			);
+			if ( IdentificationType.contains('Driver\'s License')) {
+				iden.TF4SF__ID_Type__c = 'Driver License';
+				iden.TF4SF__Identity_Number_Primary__c = IdentificationNumber;
+				iden.TF4SF__State_Issued__c = IdState;
+				iden.TF4SF__Expiry_Date__c = Id_ExpirationDate;
+				iden.TF4SF__Issue_Date__c = Id_IssueDate;
+			}
 			
+
 			if (TF4SF__Identity_Information__c.SObjectType.getDescribe().isCreateable()) { insert iden; }
 			TF4SF__Employment_Information__c emp = new TF4SF__Employment_Information__c(TF4SF__Application__c = app.Id);
 			if (TF4SF__Employment_Information__c.SObjectType.getDescribe().isCreateable()) { insert emp; }
@@ -243,7 +263,8 @@ global with sharing class OnlineBankingPublicController {
 
 			if (TF4SF__Application_Activity__c.SObjectType.getDescribe().isCreateable()) { insert appAct; }
 			String userToken = SearchMemberResults.decrypt(app.TF4SF__User_Token__c);
-			String subpage = (validPrefill) ? '#/personal-info' : '#/get-started';
+			//String subpage = (validPrefill) ? '#/personal-info' : '#/get-started';
+			String subpage = (validPrefill) ? '#/cross-sell' : '#/get-started';
 			System.debug('app.Id = ' + app.Id);
 			PageReference p = new PageReference(TF4SF__SiteUrl__c.getOrgDefaults().TF4SF__Url__c + 'tf4sf__dsp' + subpage);
 			p.getParameters().put('id', app.Id);
@@ -431,13 +452,15 @@ global with sharing class OnlineBankingPublicController {
 					return null;
 				}
 			}
-
+			
 			SearchMemberResults.setAppToken(newApplication);  
 			insert newApplication;
 			parseProductType(newApplication);
 			update newApplication;
 			userToken = SearchMemberResults.decrypt(newApplication.TF4SF__User_Token__c);
-
+			system.debug(' Post decrypt of user token');
+			system.debug('The new application Id' + newApplication.Id);
+			
 			// Creating Application2, AboutAccount and Activity History Records since these objects need Application ID as their parent
 			if (newApplication.Id != null) {
 				newApplication2.TF4SF__Application__c = newApplication.Id;
@@ -486,6 +509,7 @@ global with sharing class OnlineBankingPublicController {
 			} else if (app.TF4SF__Third_Offer__c != null && app.TF4SF__Third_Offer__c.contains(productMappingName)) {
 				prodName = app.TF4SF__Third_Offer__c;
 			} else {
+
 				prodName = null;
 			}
 
@@ -678,7 +702,7 @@ global with sharing class OnlineBankingPublicController {
 
 			if (Schema.sObjectType.TF4SF__Application__c.fields.TF4SF__Type_of_Mortgage_Loan__c.isCreateable()) { app.TF4SF__Type_of_Mortgage_Loan__c = prodName; }
 			if (app.TF4SF__Type_of_Mortgage_Loan__c != null) { i = i + 1; }
-						
+
 			// To update type of Home Equity product selected
 			productMappingName = TF4SF__Product_Names_Mapping__c.getValues('HomeEquity').TF4SF__Product_Name__c;
 			if (app.TF4SF__Sub_Product__c != null && app.TF4SF__Sub_Product__c.contains(productMappingName)) {
@@ -692,6 +716,7 @@ global with sharing class OnlineBankingPublicController {
 			} else {
 				prodName = null;
 			}
+			
 
 			if (Schema.sObjectType.TF4SF__Application__c.fields.TF4SF__Type_Of_Home_Equity__c.isCreateable()) { app.TF4SF__Type_Of_Home_Equity__c = prodName; }
 			if (app.TF4SF__Type_Of_Home_Equity__c != null) { i = i + 1; }

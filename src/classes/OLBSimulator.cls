@@ -4,15 +4,16 @@ public with sharing class OLBSimulator {
 	public String SubProductResult{get; set;}
 	public String currentSiteUrl{get; set;}
 	public String orgName{get; set;}
-	  
+
 	public OLBSimulator() {
-		currentSiteUrl = TF4SF__SiteUrl__c.getOrgDefaults().TF4SF__Url__c; 
+		currentSiteUrl = TF4SF__SiteUrl__c.getOrgDefaults().TF4SF__Url__c;
 		this.orgName = UserInfo.getUserName().substringAfterLast('.');
-	} 
-	
+	}
+
 	@RemoteAction
 	public static String encryptJSON(String json) {
 		String encryptedDataString = '';
+
 		try {
 			OnlineEncryption__c OBC = OnlineEncryption__c.getOrgDefaults();
 			blob cryptoKey = EncodingUtil.base64Decode(OBC.key__c);
@@ -21,7 +22,7 @@ public with sharing class OLBSimulator {
 			//blob vector = EncodingUtil.base64Decode('kUDffr0GPCT8L1ORctecUA==');
 			//Blob encrypted = Crypto.encryptWithManagedIV('AES256', cryptoKey, Blob.valueOf(json));
 			Blob encrypted = Crypto.encrypt('AES256', cryptoKey, vector, Blob.valueOf(json));
-			system.debug('the data is '+EncodingUtil.base64Encode(encrypted));
+			System.debug('the data is '+EncodingUtil.base64Encode(encrypted));
 			encryptedDataString = EncodingUtil.base64Encode(encrypted);
 			System.debug('length: ' + encryptedDataString.length() + '; encryptedDataString: ' + encryptedDataString);
 		} catch (Exception e) {

@@ -14,8 +14,8 @@ global class Batch_StipulationsAPI implements Database.Batchable<sObject> {
 			appId = a.id;
 		}
 
-		if (productId != '' && appId != '') { StipulationsAPI.callStipulations(productId, appId); }
+		//if (productId != '' && appId != '') { StipulationsAPI.callStipulations(productId, appId); }
 	}
-	
+
 	global void finish(Database.BatchableContext BC) {}
 }

@@ -27,18 +27,15 @@ public class notesTriggerHandler {
 			if (mapApp.ContainsKey(nt.ParentId) && String.isNotBlank(nt.Title)) {
 				System.debug('entered: ');
 				/*gen.writeStartObject();
-				if(mapApp.get(nt.ParentId)!=null){
+				if (mapApp.get(nt.ParentId) != null) {
 					gen.writeStringField('product_app_id', mapApp.get(nt.ParentId) );
-				}
-				else
-				{
+				} else {
 					gen.writeStringField('product_app_id','' );
 				}
-				if( nt.Body!=null){
+
+				if (nt.Body != null) {
 					gen.writeObjectField('messages', nt.Body);
-				}
-				else
-				{
+				} else {
 					gen.writeObjectField('messages', '');
 				}
 				gen.writeEndObject();*/
@@ -52,11 +49,11 @@ public class notesTriggerHandler {
 				template += ']';
 			}
 		}
-		
+
 		System.debug('---str---' + template);
 		http_postMethod(template);
 	}
-	
+
 	@Future(callout=true)
 	public static void http_postMethod(String jsonBody) {
 		Alpha_Pack__c aPack = Alpha_Pack__c.getOrgDefaults();
@@ -77,7 +74,7 @@ public class notesTriggerHandler {
 				req.setEndpoint(aPack.Production_URL__c + 'api/product-applications/messages/');
 				authorizationHeader = 'JWT ' + aPack.Production_Token__c;
 			}
-			
+
 			req.setHeader('Authorization', authorizationHeader);
 			req.setBody(jsonBody);
 			System.debug('jsonbodu: ' + jsonbody);

@@ -5,6 +5,8 @@
  */
 global class getPostalAPIKey implements TF4SF.DSP_Interface {
 	global Map<String, String> main(Map<String, String> tdata) {
+		Long time1 = DateTime.now().getTime();
+		Boolean infoDebug = (tdata.get('infoDebug') == 'true');
 		Map<String, String> data = new Map<String, String>();
 		//data = tdata.clone();
 
@@ -12,7 +14,7 @@ global class getPostalAPIKey implements TF4SF.DSP_Interface {
 			String apiKey = '';
 			String apiUrl = '';
 			List<TF4SF__Application_Configuration__c> lstAppConfig = [SELECT Id, Zipcode_API_Key__c, Zipcode_ApiUrl__c FROM TF4SF__Application_Configuration__c];
-			if (lstAppConfig.size() > 0){
+			if (lstAppConfig.size() > 0) {
 				apiKey = lstAppConfig[0].Zipcode_API_Key__c;
 				apiUrl = lstAppConfig[0].Zipcode_ApiUrl__c ;
 			}
@@ -23,6 +25,10 @@ global class getPostalAPIKey implements TF4SF.DSP_Interface {
 			data.clear();
 			System.debug('Exception : ' + ex.getMessage());
 		}
+
+		Long time2 = DateTime.now().getTime();
+		if (infoDebug == true ) { data.put('debug-server-errors', 'getPostalAPIKey - Elapsed Call Time: ' + (time2 - time1) + 'ms'); }
+		ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.INFO, 'getPostalAPIKey - Elapsed Call Time: ' + (time2 - time1) + 'ms'));
 
 		return data;
 	}

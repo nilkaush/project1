@@ -151,7 +151,7 @@ global class MemberAccountListExt {
 				if (d1.get('address') != null) {
 					Map<String, Object> d3 = (Map<String, Object>)d1.get('address');
 					List<String> d2 = String.valueOf(d3.get('address_lines')).split(',');
-					for (String d5 : d2){ System.debug('the Street address ' + d5.replace('(', '').replace(')', '')); }
+					for (String d5 : d2) { System.debug('the Street address ' + d5.replace('(', '').replace(')', '')); }
 					System.debug('the township is ' + d3.get('township'));
 					System.debug('the state_code is ' + d3.get('state_code'));
 					System.debug('the country_code is ' + d3.get('country_code'));
@@ -166,7 +166,7 @@ global class MemberAccountListExt {
 				System.debug('the customer id is ' + j.get('id'));
 				System.debug('the customer relationship is ' + j.get('relationship'));
 			}
-			
+
 			List<String> e1 = String.valueOf((List<Object>)h.get('flags')).split(',');
 			System.debug('the flags is ' + e1);
 			for (String g1 : e1) {

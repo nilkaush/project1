@@ -3,24 +3,26 @@
  */
 global class DriverLicenseScan implements TF4SF.DSP_Interface {
 	global Map<String, String> main(Map<String, String> tdata) {
+		Long time1 = DateTime.now().getTime();
+		Boolean infoDebug = (tdata.get('infoDebug') == 'true');
 		Map<String, String> data = new Map<String, String>();
 		data = tdata.clone();
 		String backImage = '';
 		String appId = data.get('id');
-		blob imageBack;
-		blob imageFront;
+		Blob imageBack;
+		Blob imageFront;
 
 		try {
 			String attachmentId = data.get('attachmentId');
 			data.remove('attachmentId');
 			data.remove('extensionClass');
-			Attachment a ;
+			Attachment a;
 
 			if (attachmentId != null) {
-				a = [Select Id, Name, Body, ParentId FROM Attachment WHERE Id = :attachmentId];
+				a = [SELECT Id, Name, Body, ParentId FROM Attachment WHERE Id = :attachmentId];
 				imageBack = a.Body;
 			}
-			
+
 			List<TF4SF__Application_Configuration__c> lstCustSetting = [SELECT Id, DL_API_Key__c, DL_Endpoint_URL__c FROM TF4SF__Application_Configuration__c];
 			System.debug('----a.Paremt----' + a.parentId);
 			String authKey;
@@ -28,24 +30,24 @@ global class DriverLicenseScan implements TF4SF.DSP_Interface {
 
 			if (lstCustSetting.size() > 0) {
 				authKey = lstCustSetting[0].DL_API_Key__c;
-				Endpoint = lstCustSetting[0].DL_Endpoint_URL__c; 
+				Endpoint = lstCustSetting[0].DL_Endpoint_URL__c;
 			}
-			
+
 			backImage = EncodingUtil.base64Encode(imageBack);
 			Http h = new Http();
 			HttpRequest req = new HttpRequest();
 			String body = '{"authKey":"' + authKey + '", "data" : "' + backImage + '"}';
-			
+
 			req.setBody(body);
 			req.setHeader('Content-Type', 'text/json');
 			req.setHeader('Cache-Control','no-cache');
 			req.setEndpoint(Endpoint);
 			req.setMethod('POST');
-			
+
 			HttpResponse resp = h.send(req);
 			String JsonResp = resp.getBody();
 			String JsonStatusCode = String.valueOf(resp.getStatusCode());
-			
+
 			// Parsing Image Json to Application and Identity Information Object for the Applicant.
 			Map<String, Object> m = (Map<String, Object>)JSON.deserializeUntyped(JsonResp);
 			System.debug('the resultMap is ' + m);
@@ -114,10 +116,9 @@ global class DriverLicenseScan implements TF4SF.DSP_Interface {
 			System.debug('the NameSuffix is ' + NameSuffix);
 			String OrganDonor = String.valueOf(l.get('OrganDonor'));
 			System.debug('the OrganDonor is ' + OrganDonor);
-			
+
 			String PostalCode = String.valueOf(l.get('PostalCode'));
-			System.debug('the PostalCode is ' + PostalCode);         
-			
+			System.debug('the PostalCode is ' + PostalCode);
 			String Race = String.valueOf(l.get('Race'));
 			System.debug('the Race is ' + Race);
 			String RestrictionCode = String.valueOf(l.get('RestrictionCode'));
@@ -147,7 +148,7 @@ global class DriverLicenseScan implements TF4SF.DSP_Interface {
 			System.debug('the Errors is ' + Errors);
 			String IsValid = String.valueOf(q.get('IsValid'));
 			System.debug('the IsValid is ' + IsValid);
-			
+
 			data.put('Application__c.First_Name__c', FirstName);
 			data.put('Application__c.Last_Name__c', LastName);
 			data.put('Application__c.Street_Address_1__c', Address1);
@@ -163,8 +164,19 @@ global class DriverLicenseScan implements TF4SF.DSP_Interface {
 			data.put('Identity_Information__c.ID_Type__c', 'Driver License');
 			data.put('Identity_Information__c.Identity_Number_Primary__c', LicenseNumber);
 			data.put('Identity_Information__c.Country_Issued__c', Country);
-			data.put('Identity_Information__c.State_Issued__c', IssuedBy);           
-			
+			data.put('Identity_Information__c.State_Issued__c', IssuedBy);
+
+			String CurrentDate = date.today().format();
+			Date CurrentDate_DateFormat = date.parse(CurrentDate);
+			Date ExpirationDate_DateFormat = date.parse(formatDateString(ExpirationDate));
+			String DLStat = '';
+
+			if (ExpirationDate_DateFormat < CurrentDate_DateFormat) {
+				DLStat = 'Expired';
+				data.clear(); 
+				data.put('Identity_Information__c.ID_Type__c', DLStat);
+			}
+
 			if (CountryCode != 'USA') { data.clear(); }
 		} catch (Exception ex) {
 			List<TF4SF__Field_Logic_New__c> listFieldLogic = [SELECT Id, TF4SF__Value__c FROM TF4SF__Field_Logic_New__c WHERE TF4SF__RecType__c = 'Page Labels' AND TF4SF__Page_Type__c = 'GetStartedPage' AND TF4SF__Label_Name__c = 'DL_Scan_Error_Message'];
@@ -179,10 +191,14 @@ global class DriverLicenseScan implements TF4SF.DSP_Interface {
 			System.debug('Exception : ' + ex.getMessage());
 		}
 
+		Long time2 = DateTime.now().getTime();
+		if (infoDebug == true ) { data.put('debug-server-errors', 'DriverLicenseScan - Elapsed Call Time: ' + (time2 - time1) + 'ms'); }
+		ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.INFO, 'DriverLicenseScan - Elapsed Call Time: ' + (time2 - time1) + 'ms'));
+
 		return data;
 	}
-	
-	public string formatDateString(String oldDate) {
+
+	public String formatDateString(String oldDate) {
 		String newDate = '';
 		List<String> DateList = oldDate.split('-');
 		newDate = DateList[1] + '/' + DateList[2] + '/' + DateList[0]; // change date in MM/DD/YYYY format.

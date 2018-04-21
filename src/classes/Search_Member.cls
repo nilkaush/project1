@@ -33,12 +33,14 @@ public with sharing class Search_Member {
 	public List<TF4SF__Identity_Information__c> identity = new List<TF4SF__Identity_Information__c>();
 	public List<String> IdenList = new List<String>();
 	public List<ApplicationWrapper> appWrapper{get; set;}
-	public boolean displayPopup {get; set;}
+	public Boolean displayPopup {get; set;}
 	public String CustomerId {get; set;}
+	public String federalId {get; set;}
+	public String lName {get; set;}
 	public List<Object> Accounts {get; set;}
 	public String ExistingAccount_Id {get; set;}
 	public String Account_id {get; set;} 
-	
+
 	// Constructor
 	public Search_Member() {
 		//imageURL='/servlet/servlet.FileDownload?file=';
@@ -49,7 +51,7 @@ public with sharing class Search_Member {
 		//} else {
 			maxSearchResults = 100;
 		//}
-		
+
 		//if (Service_Configuration__c.getOrgDefaults().Search_Member_Result_Per_Page__c != null) {
 		//    recordsPerPage = Integer.valueOf(Service_Configuration__c.getOrgDefaults().Search_Member_Result_Per_Page__c);
 		//} else {
@@ -119,6 +121,9 @@ public with sharing class Search_Member {
 			for (Object u : k) {
 				Map<String, Object> l = (Map<String, Object>)u;
 				CustomerId = String.valueOf(l.get('id'));
+				System.debug('customerId: '+customerId);
+				federalId = String.valueOf(l.get('federal_id'));
+				lName = String.valueOf(l.get('last_name'));
 				Accounts = (List<Object>)l.get('accounts');
 				System.debug('the accounts list is ' + Accounts);
 
@@ -130,7 +135,9 @@ public with sharing class Search_Member {
 					System.debug('the Customers is ' + e);
 
 					for (Object g : e) {
+						System.debug('entered e: '+g);
 						Map<String, Object> j = (Map<String, Object>)g;
+						System.debug('entered j: '+j);
 						System.debug('the customer id is ' + j.get('id'));
 						System.debug('the customer relationship is ' + j.get('relationship'));
 						System.debug('the customer first_name is ' + j.get('first_name'));
@@ -140,6 +147,7 @@ public with sharing class Search_Member {
 						customerList.add(String.valueOf(j.get('id')));
 					}
 
+					System.debug('customerList: '+customerList);
 					List<String> e1 = String.valueOf((List<Object>)h.get('flags')).split(',');
 					flagList = new List<String>();
 					System.debug('the flags is ' + e1);
@@ -164,23 +172,53 @@ public with sharing class Search_Member {
 			}
 
 			if (existingAccountList.size() > 0) { insert existingAccountList; }
-			TF4SF__Customer__c customer;
+			//TF4SF__Customer__c customer;
 			List<String> allCustomerList = new List<String>();
 			List<TF4SF__Customer__c> insertCustomerList = new List<TF4SF__Customer__c>();
+			List<TF4SF__Customer__c> updateCustomerList = new List<TF4SF__Customer__c>();
 			allCustomerList.addAll(customerList);
+			Map<String, TF4SF__Customer__c> existCustMap = new Map<String, TF4SF__Customer__c>();
 
 			if (allCustomerList.size() > 0) {
 				List<TF4SF__Customer__c> exitingCustomerList = [SELECT Id, TF4SF__Person_Identifier__c FROM TF4SF__Customer__c WHERE TF4SF__Person_Identifier__c IN :allCustomerList];
 				if (exitingCustomerList.size() > 0) {
-				} else {
-					for (String custId : allCustomerList) {
-						customer = new TF4SF__Customer__c();
-						customer.TF4SF__Person_Identifier__c = custId;  
-						insertCustomerList.add(customer);
+					for (TF4SF__Customer__c existCust : exitingCustomerList) {
+						existCustMap.put(existCust.TF4SF__Person_Identifier__c, existCust);
 					}
 				}
 
-				insert insertCustomerList;
+				System.debug('existingCustomerList: '+exitingCustomerList);
+				for (String custNo : allCustomerList) {
+					if (existCustMap.size() > 0 && existCustMap.containsKey(custNo)) {
+						TF4SF__Customer__c customer = new TF4SF__Customer__c();
+						customer.Id = existCustMap.get(custNo).Id;
+						customer.TF4SF__Person_Identifier__c = custNo;
+						if (custNo == customerId) {
+							customer.TF4SF__SSN__c = federalId;
+							customer.TF4SF__Last_Name__c = lName;  
+						}
+
+						updateCustomerList.add(customer);
+					} else {
+						//for (String custId : allCustomerList) {
+							TF4SF__Customer__c customer = new TF4SF__Customer__c();
+							customer.TF4SF__Person_Identifier__c = custNo;
+							if (custNo == customerId) {
+								customer.TF4SF__SSN__c = federalId;
+								customer.TF4SF__Last_Name__c = lName;  
+							}
+							insertCustomerList.add(customer);
+						//}
+					}
+				}
+
+				if (insertCustomerList.size() > 0) {
+					insert insertCustomerList;
+				}
+
+				if (updateCustomerList.size() > 0) {
+					update updateCustomerList;
+				}
 			}
 
 			for (TF4SF__Customer__c custList : insertCustomerList) {
@@ -195,17 +233,19 @@ public with sharing class Search_Member {
 			}
 
 			if (customerAccList.size() > 0) { insert customerAccList; }
-			if(String.isNotBlank(CustomerId)) {
-				Customer_Id = [SELECT Id, TF4SF__Person_Identifier__c FROM TF4SF__Customer__c WHERE TF4SF__Person_Identifier__c = :CustomerId].Id;
+			if (String.isNotBlank(CustomerId)) {
+				TF4SF__Customer__c cst = [SELECT Id, TF4SF__Person_Identifier__c, TF4SF__SSN__c, TF4SF__Last_Name__c FROM TF4SF__Customer__c WHERE TF4SF__Person_Identifier__c = :CustomerId];
+				Customer_Id = cst.Id;
+				//SearchMemberResults.offers(cst.TF4SF__SSN__c, cst.TF4SF__Last_Name__c, cst.Id);
 				p = new PageReference('/' + Customer_Id);
 				p.setRedirect(true);
 
 				return p;
 			}
-		}
-		else {
+		} else {
 			apexpages.addmessage(new ApexPages.message(ApexPages.severity.INFO, 'Sorry, We cannot find a customer with the SSN you have entered'));
 		}
+
 		return null;
 	}
 
@@ -240,12 +280,12 @@ public with sharing class Search_Member {
 		app.TF4SF__Application_Page__c = 'GetStartedPage';
 
 		if (TF4SF__Application__c.SObjectType.getDescribe().isCreateable()) { insert app; }
-		app2.TF4SF__Application__c= app.Id;
-		emp.TF4SF__Application__c= app.Id;
-		iden.TF4SF__Application__c= app.Id;
-		acc.TF4SF__Application__c= app.Id;
+		app2.TF4SF__Application__c = app.Id;
+		emp.TF4SF__Application__c = app.Id;
+		iden.TF4SF__Application__c = app.Id;
+		acc.TF4SF__Application__c = app.Id;
 
-		appact.TF4SF__Application__c= app.Id;
+		appact.TF4SF__Application__c = app.Id;
 		appact.TF4SF__Action__c = 'Created the Application';
 		appact.TF4SF__Activity_Time__c = System.now();
 
@@ -262,7 +302,7 @@ public with sharing class Search_Member {
 			StartApplication.setAppToken(app);
 			update app;
 			String userToken = StartApplication.decrypt(app.TF4SF__User_Token__c);
-			
+
 			Cookie id = ApexPages.currentPage().getCookies().get('id');
 			Cookie ut = ApexPages.currentPage().getCookies().get('ut');
 			id = new Cookie('id', appId, null, -1, true);
@@ -272,14 +312,14 @@ public with sharing class Search_Member {
 			System.debug('User_Token__c:' + app.TF4SF__User_Token__c);
 
 			// Set the new cookie for the page
-			ApexPages.currentPage().setCookies(new Cookie[]{id,ut});
+			ApexPages.currentPage().setCookies(new Cookie[]{id, ut});
 			p = new PageReference(TF4SF__SiteUrl__c.getOrgDefaults().TF4SF__Url__c + 'TF4SF__OfflinePage?id=' + appId);
 			p.setRedirect(true);
 		}
 
 		return p;
 	}
-	
+
 	// Method executed when "Search" button om the SearchMember page is clicked
 	public void executeAppSearch() {
 		try {
@@ -320,42 +360,42 @@ public with sharing class Search_Member {
 				ShowApplicantNo = true;
 				applications = [SELECT Id, Name, CreatedDate__c, category__c, TF4SF__Custom_DateTime1__c, TF4SF__Primary_Offer__c, TF4SF__Second_Offer__c, TF4SF__Third_Offer__c, TF4SF__Number_of_Products__c, App_Number__c, Membership_Number__c, TF4SF__Sub_Product__c, TF4SF__Email_Address__c, TF4SF__First_Name__c, TF4SF__Last_Name__c, TF4SF__First_Name_J__c, TF4SF__Last_Name_J__c, TF4SF__First_Name_J2__c, TF4SF__Last_Name_J2__c, TF4SF__Current_Channel__c, TF4SF__Current_Branch_Name__c, TF4SF__Application_Status__c, TF4SF__Created_Timestamp__c, TF4SF__Submitted_Timestamp__c, TF4SF__External_App_ID__c, TF4SF__External_AppID_CrossSell1__c, TF4SF__External_AppID_CrossSell2__c, TF4SF__External_AppID_CrossSell3__c, TF4SF__Primary_Product_Status__c, TF4SF__Primary_Offer_Status__c, TF4SF__Second_Offer_Status__c, TF4SF__Third_Offer_Status__c, LastModifiedDate
 					FROM TF4SF__Application__c WHERE (((TF4SF__First_Name__c = :appfirstnameQuery AND TF4SF__Last_Name__c = :applastnameQuery AND TF4SF__Email_Address__c = :appEmailQuery) OR (TF4SF__First_Name_J__c = :appfirstnameQuery AND TF4SF__Last_Name_J__c = :applastnameQuery AND TF4SF__Email_Address_J__c = :appEmailQuery) OR (TF4SF__First_Name_J2__c = :appfirstnameQuery AND TF4SF__Last_Name_J2__c = :applastnameQuery AND TF4SF__Email_Address_J2__c = :appEmailQuery)) AND (CreatedDate__c >= :fromDay AND CreatedDate__c <= :toDay)) ORDER BY LastModifiedDate LIMIT :maxSearchResults];
-			} else if (appfirstnameQuery != '' && applastnameQuery != '' && appssnLast4Query !='' && appEmailQuery != '') {
+			} else if (appfirstnameQuery != '' && applastnameQuery != '' && appssnLast4Query != '' && appEmailQuery != '') {
 				ShowApplicantNo = true;
 				identity = [SELECT Id, Name, TF4SF__SSN_Last_Four_PA__c, TF4SF__SSN_Last_Four_J1__c, TF4SF__SSN_Last_Four_J2__c, TF4SF__SSN_Prime__c, TF4SF__Application__c, TF4SF__Application__r.TF4SF__First_Name__c, TF4SF__Application__r.TF4SF__Last_Name__c, TF4SF__Application__r.TF4SF__First_Name_J__c, TF4SF__Application__r.TF4SF__Last_Name_J__c, TF4SF__Application__r.TF4SF__First_Name_J2__c, TF4SF__Application__r.TF4SF__Last_Name_J2__c, TF4SF__Application__r.TF4SF__Email_Address__c, TF4SF__Application__r.TF4SF__Current_Channel__c, TF4SF__Application__r.TF4SF__Current_Branch_Name__c, TF4SF__Application__r.TF4SF__Application_Status__c, TF4SF__Application__r.TF4SF__Created_Timestamp__c, TF4SF__Application__r.CreatedDate__c, TF4SF__Application__r.TF4SF__Submitted_Timestamp__c, LastModifiedDate
 					FROM TF4SF__Identity_Information__c WHERE (((TF4SF__Application__r.TF4SF__First_Name__c = :appfirstnameQuery AND TF4SF__Application__r.TF4SF__Last_Name__c = :applastnameQuery AND TF4SF__SSN_Last_Four_PA__c = :appssnLast4Query AND TF4SF__Application__r.TF4SF__Email_Address__c = :appEmailQuery) OR (TF4SF__Application__r.TF4SF__First_Name_J__c = :appfirstnameQuery AND TF4SF__Application__r.TF4SF__Last_Name_J__c = :applastnameQuery AND TF4SF__SSN_Last_Four_J1__c = :appssnLast4Query AND TF4SF__Application__r.TF4SF__Email_Address_J__c = :appEmailQuery) OR (TF4SF__Application__r.TF4SF__First_Name_J2__c = :appfirstnameQuery AND TF4SF__Application__r.TF4SF__Last_Name_J2__c = :applastnameQuery AND TF4SF__SSN_Last_Four_J2__c = :appssnLast4Query AND TF4SF__Application__r.TF4SF__Email_Address_J2__c = :appEmailQuery)) AND (TF4SF__Application__r.CreatedDate__c >= :fromDay AND TF4SF__Application__r.CreatedDate__c <= :toDay)) ORDER BY TF4SF__Application__r.LastModifiedDate LIMIT :maxSearchResults];
 				for (TF4SF__Identity_Information__c d : identity) { IdenList.add(d.TF4SF__Application__c); }
 				applications = [SELECT Id, Name, CreatedDate__c, category__c, TF4SF__Custom_DateTime1__c, TF4SF__Primary_Offer__c, TF4SF__Second_Offer__c, TF4SF__Third_Offer__c, App_Number__c, TF4SF__Number_of_Products__c, Membership_Number__c, TF4SF__Sub_Product__c, TF4SF__Email_Address__c, TF4SF__First_Name__c, TF4SF__Last_Name__c, TF4SF__First_Name_J__c, TF4SF__Last_Name_J__c, TF4SF__First_Name_J2__c, TF4SF__Last_Name_J2__c, TF4SF__Current_Channel__c, TF4SF__Current_Branch_Name__c, TF4SF__Application_Status__c, TF4SF__Created_Timestamp__c, TF4SF__Submitted_Timestamp__c, TF4SF__External_App_ID__c, TF4SF__External_AppID_CrossSell1__c, TF4SF__External_AppID_CrossSell2__c, TF4SF__External_AppID_CrossSell3__c,  TF4SF__Primary_Product_Status__c, TF4SF__Primary_Offer_Status__c, TF4SF__Second_Offer_Status__c, TF4SF__Third_Offer_Status__c, LastModifiedDate
 					FROM TF4SF__Application__c WHERE Id IN :IdenList];
-			} else if (appfirstnameQuery != '' && applastnameQuery != '' && appssnLast4Query !='' && appEmailQuery == '') {
+			} else if (appfirstnameQuery != '' && applastnameQuery != '' && appssnLast4Query != '' && appEmailQuery == '') {
 				ShowApplicantNo = true;
 				identity = [SELECT Id, Name, TF4SF__SSN_Last_Four_PA__c, TF4SF__SSN_Last_Four_J1__c, TF4SF__SSN_Last_Four_J2__c, TF4SF__SSN_Prime__c, TF4SF__Application__c, TF4SF__Application__r.TF4SF__First_Name__c, TF4SF__Application__r.TF4SF__Last_Name__c, TF4SF__Application__r.TF4SF__First_Name_J__c, TF4SF__Application__r.TF4SF__Last_Name_J__c, TF4SF__Application__r.TF4SF__First_Name_J2__c, TF4SF__Application__r.TF4SF__Last_Name_J2__c, TF4SF__Application__r.TF4SF__Email_Address__c, TF4SF__Application__r.TF4SF__Current_Channel__c, TF4SF__Application__r.TF4SF__Current_Branch_Name__c, TF4SF__Application__r.TF4SF__Application_Status__c, TF4SF__Application__r.TF4SF__Created_Timestamp__c, TF4SF__Application__r.CreatedDate__c, TF4SF__Application__r.TF4SF__Submitted_Timestamp__c, TF4SF__Application__r.LastModifiedDate
 					FROM TF4SF__Identity_Information__c WHERE (((TF4SF__Application__r.TF4SF__First_Name__c = :appfirstnameQuery AND TF4SF__Application__r.TF4SF__Last_Name__c = :applastnameQuery AND TF4SF__SSN_Last_Four_PA__c = :appssnLast4Query) OR (TF4SF__Application__r.TF4SF__First_Name_J__c = :appfirstnameQuery AND TF4SF__Application__r.TF4SF__Last_Name_J__c = :applastnameQuery AND TF4SF__SSN_Last_Four_J1__c = :appssnLast4Query) OR (TF4SF__Application__r.TF4SF__First_Name_J2__c = :appfirstnameQuery AND TF4SF__Application__r.TF4SF__Last_Name_J2__c = :applastnameQuery AND TF4SF__SSN_Last_Four_J2__c = :appssnLast4Query)) AND (TF4SF__Application__r.CreatedDate__c >= :fromDay AND TF4SF__Application__r.CreatedDate__c <= :toDay)) ORDER BY TF4SF__Application__r.LastModifiedDate LIMIT :maxSearchResults];
 				for (TF4SF__Identity_Information__c d : identity) { IdenList.add(d.TF4SF__Application__c); }
 				applications = [SELECT Id, Name, CreatedDate__c, category__c, TF4SF__Custom_DateTime1__c, TF4SF__Primary_Offer__c, TF4SF__Second_Offer__c, TF4SF__Third_Offer__c, App_Number__c, TF4SF__Number_of_Products__c, Membership_Number__c, TF4SF__Sub_Product__c, TF4SF__Email_Address__c, TF4SF__First_Name__c, TF4SF__Last_Name__c, TF4SF__First_Name_J__c, TF4SF__Last_Name_J__c, TF4SF__First_Name_J2__c, TF4SF__Last_Name_J2__c, TF4SF__Current_Channel__c, TF4SF__Current_Branch_Name__c, TF4SF__Application_Status__c, TF4SF__Created_Timestamp__c, TF4SF__Submitted_Timestamp__c, TF4SF__External_App_ID__c, TF4SF__External_AppID_CrossSell1__c, TF4SF__External_AppID_CrossSell2__c, TF4SF__External_AppID_CrossSell3__c,  TF4SF__Primary_Product_Status__c, TF4SF__Primary_Offer_Status__c, TF4SF__Second_Offer_Status__c, TF4SF__Third_Offer_Status__c, LastModifiedDate
 					FROM TF4SF__Application__c WHERE Id IN :IdenList];
-			} else if (appfirstnameQuery != ''&& appssnLast4Query !='' && applastnameQuery=='' && appEmailQuery == '') {
+			} else if (appfirstnameQuery != '' && appssnLast4Query != '' && applastnameQuery == '' && appEmailQuery == '') {
 				ShowApplicantNo = true;
 				identity = [SELECT Id, Name, TF4SF__SSN_Last_Four_PA__c, TF4SF__SSN_Last_Four_J1__c, TF4SF__SSN_Last_Four_J2__c, TF4SF__SSN_Prime__c, TF4SF__Application__c, TF4SF__Application__r.TF4SF__First_Name__c, TF4SF__Application__r.TF4SF__Last_Name__c, TF4SF__Application__r.TF4SF__First_Name_J__c, TF4SF__Application__r.TF4SF__Last_Name_J__c, TF4SF__Application__r.TF4SF__First_Name_J2__c, TF4SF__Application__r.TF4SF__Last_Name_J2__c, TF4SF__Application__r.TF4SF__Email_Address__c, TF4SF__Application__r.TF4SF__Current_Channel__c, TF4SF__Application__r.TF4SF__Current_Branch_Name__c, TF4SF__Application__r.TF4SF__Application_Status__c, TF4SF__Application__r.TF4SF__Created_Timestamp__c, TF4SF__Application__r.CreatedDate__c, TF4SF__Application__r.TF4SF__Submitted_Timestamp__c, TF4SF__Application__r.LastModifiedDate
 					FROM TF4SF__Identity_Information__c WHERE (((TF4SF__Application__r.TF4SF__First_Name__c = :appfirstnameQuery AND TF4SF__SSN_Last_Four_PA__c = :appssnLast4Query) OR (TF4SF__Application__r.TF4SF__First_Name_J__c = :appfirstnameQuery AND TF4SF__SSN_Last_Four_J1__c = :appssnLast4Query) OR (TF4SF__Application__r.TF4SF__First_Name_J2__c = :appfirstnameQuery AND TF4SF__SSN_Last_Four_J2__c = :appssnLast4Query)) AND (TF4SF__Application__r.CreatedDate__c >=: fromDay AND TF4SF__Application__r.CreatedDate__c <=: toDay)) ORDER BY TF4SF__Application__r.LastModifiedDate LIMIT :maxSearchResults];
 				for (TF4SF__Identity_Information__c d : identity) { IdenList.add(d.TF4SF__Application__c); }
 				applications = [SELECT Id, Name, CreatedDate__c, category__c, TF4SF__Custom_DateTime1__c, TF4SF__Primary_Offer__c, TF4SF__Second_Offer__c, TF4SF__Third_Offer__c, TF4SF__Number_of_Products__c, App_Number__c, Membership_Number__c, TF4SF__Sub_Product__c, TF4SF__Email_Address__c, TF4SF__First_Name__c, TF4SF__Last_Name__c, TF4SF__First_Name_J__c, TF4SF__Last_Name_J__c, TF4SF__First_Name_J2__c, TF4SF__Last_Name_J2__c, TF4SF__Current_Channel__c, TF4SF__Current_Branch_Name__c, TF4SF__Application_Status__c, TF4SF__Created_Timestamp__c, TF4SF__Submitted_Timestamp__c, TF4SF__External_App_ID__c, TF4SF__External_AppID_CrossSell1__c, TF4SF__External_AppID_CrossSell2__c, TF4SF__External_AppID_CrossSell3__c, TF4SF__Primary_Product_Status__c, TF4SF__Primary_Offer_Status__c, TF4SF__Second_Offer_Status__c, TF4SF__Third_Offer_Status__c, LastModifiedDate
 					FROM TF4SF__Application__c WHERE Id IN :IdenList];
-			} else if (appfirstnameQuery != ''&& appssnLast4Query !='' && applastnameQuery=='' && appEmailQuery != '') {
+			} else if (appfirstnameQuery != '' && appssnLast4Query !='' && applastnameQuery == '' && appEmailQuery != '') {
 				ShowApplicantNo = true;
 				identity = [SELECT Id, Name, TF4SF__SSN_Last_Four_PA__c, TF4SF__SSN_Last_Four_J1__c, TF4SF__SSN_Last_Four_J2__c, TF4SF__SSN_Prime__c, TF4SF__Application__c, TF4SF__Application__r.TF4SF__First_Name__c, TF4SF__Application__r.TF4SF__Last_Name__c, TF4SF__Application__r.TF4SF__First_Name_J__c, TF4SF__Application__r.TF4SF__Last_Name_J__c, TF4SF__Application__r.TF4SF__First_Name_J2__c, TF4SF__Application__r.TF4SF__Last_Name_J2__c, TF4SF__Application__r.TF4SF__Email_Address__c, TF4SF__Application__r.TF4SF__Current_Channel__c, TF4SF__Application__r.TF4SF__Current_Branch_Name__c, TF4SF__Application__r.TF4SF__Application_Status__c, TF4SF__Application__r.TF4SF__Created_Timestamp__c, TF4SF__Application__r.CreatedDate__c, TF4SF__Application__r.TF4SF__Submitted_Timestamp__c, TF4SF__Application__r.LastModifiedDate
 					FROM TF4SF__Identity_Information__c WHERE (((TF4SF__Application__r.TF4SF__First_Name__c = :appfirstnameQuery AND TF4SF__SSN_Last_Four_PA__c = :appssnLast4Query AND TF4SF__Application__r.TF4SF__Email_Address__c = :appEmailQuery) OR (TF4SF__Application__r.TF4SF__First_Name_J__c = :appfirstnameQuery AND TF4SF__SSN_Last_Four_J1__c = :appssnLast4Query AND TF4SF__Application__r.TF4SF__Email_Address_J__c = :appEmailQuery) OR (TF4SF__Application__r.TF4SF__First_Name_J2__c = :appfirstnameQuery AND TF4SF__SSN_Last_Four_J2__c = :appssnLast4Query AND TF4SF__Application__r.TF4SF__Email_Address_J2__c = :appEmailQuery)) AND (TF4SF__Application__r.CreatedDate__c >= :fromDay AND TF4SF__Application__r.CreatedDate__c <= :toDay)) ORDER BY TF4SF__Application__r.LastModifiedDate LIMIT :maxSearchResults];
 				for (TF4SF__Identity_Information__c d : identity) { IdenList.add(d.TF4SF__Application__c); }
 				applications = [SELECT Id, Name, CreatedDate__c, category__c, TF4SF__Custom_DateTime1__c, TF4SF__Primary_Offer__c, TF4SF__Second_Offer__c, TF4SF__Third_Offer__c, TF4SF__Number_of_Products__c, App_Number__c, Membership_Number__c, TF4SF__Sub_Product__c, TF4SF__Email_Address__c, TF4SF__First_Name__c, TF4SF__Last_Name__c, TF4SF__First_Name_J__c, TF4SF__Last_Name_J__c, TF4SF__First_Name_J2__c, TF4SF__Last_Name_J2__c, TF4SF__Current_Channel__c, TF4SF__Current_Branch_Name__c, TF4SF__Application_Status__c, TF4SF__Created_Timestamp__c, TF4SF__Submitted_Timestamp__c, TF4SF__External_App_ID__c, TF4SF__External_AppID_CrossSell1__c, TF4SF__External_AppID_CrossSell2__c, TF4SF__External_AppID_CrossSell3__c, TF4SF__Primary_Product_Status__c, TF4SF__Primary_Offer_Status__c, TF4SF__Second_Offer_Status__c, TF4SF__Third_Offer_Status__c, LastModifiedDate
 					FROM TF4SF__Application__c WHERE Id IN :IdenList];
-			} else if (applastnameQuery != ''&& appssnLast4Query !='' && appfirstnameQuery=='' && appEmailQuery == '') {
+			} else if (applastnameQuery != '' && appssnLast4Query !='' && appfirstnameQuery == '' && appEmailQuery == '') {
 				ShowApplicantNo = true;
 				identity = [SELECT Id, TF4SF__SSN_Last_Four_PA__c, TF4SF__SSN_Last_Four_J1__c, TF4SF__SSN_Last_Four_J2__c, TF4SF__SSN_Prime__c, TF4SF__Application__c, TF4SF__Application__r.TF4SF__First_Name__c, TF4SF__Application__r.TF4SF__Last_Name__c, TF4SF__Application__r.TF4SF__First_Name_J__c, TF4SF__Application__r.TF4SF__Last_Name_J__c, TF4SF__Application__r.TF4SF__First_Name_J2__c, TF4SF__Application__r.TF4SF__Last_Name_J2__c, TF4SF__Application__r.TF4SF__Email_Address__c, TF4SF__Application__r.TF4SF__Current_Channel__c, TF4SF__Application__r.TF4SF__Current_Branch_Name__c, TF4SF__Application__r.TF4SF__Application_Status__c, TF4SF__Application__r.TF4SF__Created_Timestamp__c, TF4SF__Application__r.CreatedDate__c, TF4SF__Application__r.TF4SF__Submitted_Timestamp__c, TF4SF__Application__r.LastModifiedDate
 					FROM TF4SF__Identity_Information__c WHERE (((TF4SF__Application__r.TF4SF__Last_Name__c = :applastnameQuery AND TF4SF__SSN_Last_Four_PA__c = :appssnLast4Query) OR (TF4SF__Application__r.TF4SF__Last_Name_J__c = :applastnameQuery AND TF4SF__SSN_Last_Four_J1__c = :appssnLast4Query) OR (TF4SF__Application__r.TF4SF__Last_Name_J2__c = :applastnameQuery AND TF4SF__SSN_Last_Four_J2__c = :appssnLast4Query)) AND (TF4SF__Application__r.CreatedDate__c >= :fromDay AND TF4SF__Application__r.CreatedDate__c <= :toDay)) ORDER BY TF4SF__Application__r.LastModifiedDate LIMIT :maxSearchResults];
 				for (TF4SF__Identity_Information__c d : identity) { IdenList.add(d.TF4SF__Application__c); }
 				applications = [SELECT Id, Name, CreatedDate__c, category__c, TF4SF__Custom_DateTime1__c, TF4SF__Primary_Offer__c, TF4SF__Second_Offer__c, TF4SF__Third_Offer__c, TF4SF__Number_of_Products__c, App_Number__c, Membership_Number__c, TF4SF__Sub_Product__c, TF4SF__Email_Address__c, TF4SF__First_Name__c, TF4SF__Last_Name__c, TF4SF__First_Name_J__c, TF4SF__Last_Name_J__c, TF4SF__First_Name_J2__c, TF4SF__Last_Name_J2__c, TF4SF__Current_Channel__c, TF4SF__Current_Branch_Name__c, TF4SF__Application_Status__c, TF4SF__Created_Timestamp__c, TF4SF__Submitted_Timestamp__c, TF4SF__External_App_ID__c, TF4SF__External_AppID_CrossSell1__c, TF4SF__External_AppID_CrossSell2__c, TF4SF__External_AppID_CrossSell3__c, TF4SF__Primary_Product_Status__c, TF4SF__Primary_Offer_Status__c, TF4SF__Second_Offer_Status__c, TF4SF__Third_Offer_Status__c, LastModifiedDate
 					FROM TF4SF__Application__c WHERE Id IN :IdenList];
-			} else if (applastnameQuery != ''&& appssnLast4Query !='' && appfirstnameQuery=='' && appEmailQuery != '') {
+			} else if (applastnameQuery != '' && appssnLast4Query !='' && appfirstnameQuery == '' && appEmailQuery != '') {
 				ShowApplicantNo = true;
 				identity = [SELECT Id, TF4SF__SSN_Last_Four_PA__c, TF4SF__SSN_Last_Four_J1__c, TF4SF__SSN_Last_Four_J2__c, TF4SF__SSN_Prime__c, TF4SF__Application__c, TF4SF__Application__r.TF4SF__First_Name__c, TF4SF__Application__r.TF4SF__Last_Name__c, TF4SF__Application__r.TF4SF__First_Name_J__c, TF4SF__Application__r.TF4SF__Last_Name_J__c, TF4SF__Application__r.TF4SF__First_Name_J2__c, TF4SF__Application__r.TF4SF__Last_Name_J2__c, TF4SF__Application__r.TF4SF__Email_Address__c, TF4SF__Application__r.TF4SF__Current_Channel__c, TF4SF__Application__r.TF4SF__Current_Branch_Name__c, TF4SF__Application__r.TF4SF__Application_Status__c, TF4SF__Application__r.TF4SF__Created_Timestamp__c, TF4SF__Application__r.CreatedDate__c, TF4SF__Application__r.TF4SF__Submitted_Timestamp__c, TF4SF__Application__r.LastModifiedDate
 					FROM TF4SF__Identity_Information__c WHERE (((TF4SF__Application__r.TF4SF__Last_Name__c = :applastnameQuery AND TF4SF__SSN_Last_Four_PA__c = :appssnLast4Query AND TF4SF__Application__r.TF4SF__Email_Address__c = :appEmailQuery) OR (TF4SF__Application__r.TF4SF__Last_Name_J__c = :applastnameQuery AND TF4SF__SSN_Last_Four_J1__c = :appssnLast4Query AND TF4SF__Application__r.TF4SF__Email_Address_J__c = :appEmailQuery) OR (TF4SF__Application__r.TF4SF__Last_Name_J2__c = :applastnameQuery AND TF4SF__SSN_Last_Four_J2__c = :appssnLast4Query AND TF4SF__Application__r.TF4SF__Email_Address_J2__c = :appEmailQuery)) AND (TF4SF__Application__r.CreatedDate__c >= :fromDay AND TF4SF__Application__r.CreatedDate__c <= :toDay)) ORDER BY TF4SF__Application__r.LastModifiedDate LIMIT :maxSearchResults];
@@ -477,7 +517,7 @@ public with sharing class Search_Member {
 			System.debug('An error was encountered in the Execute method under SearchMember class ' + e);
 		} 
 	}
-	
+
 	public List<TF4SF__Application__c> getApplicationDetails() {
 		return applications;
 	}
@@ -490,7 +530,7 @@ public with sharing class Search_Member {
 			return null;    
 		}
 	}
-	
+
 	public List<ApplicationWrapper> getappWrapperList() {
 		appWrapper = new List<ApplicationWrapper>();
 		//List<TF4SF__Application__c> appList = new List<TF4SF__Application__c>();
@@ -506,21 +546,10 @@ public with sharing class Search_Member {
 
 					for (Integer m = 1; m <= a.TF4SF__Number_of_Products__c; m++) {
 						System.debug('the product no is ' + m);
-						if (m == 1) {
-							appWrapper.add(new ApplicationWrapper(a, a.TF4SF__Sub_Product__c, a.TF4SF__Primary_Product_Status__c, appcounter));
-						} 
-
-						if (m == 2) {
-							appWrapper.add(new ApplicationWrapper(a, a.TF4SF__Primary_Offer__c, a.TF4SF__Primary_Offer_Status__c, null));
-						} 
-
-						if (m == 3) {
-							appWrapper.add(new ApplicationWrapper(a, a.TF4SF__Second_Offer__c, a.TF4SF__Second_Offer_Status__c, null));
-						}
-
-						if (m == 4) {
-							appWrapper.add(new ApplicationWrapper(a, a.TF4SF__Third_Offer__c, a.TF4SF__Third_Offer_Status__c, null));
-						} 
+						if (m == 1) { appWrapper.add(new ApplicationWrapper(a, a.TF4SF__Sub_Product__c, a.TF4SF__Primary_Product_Status__c, appcounter)); }
+						if (m == 2) { appWrapper.add(new ApplicationWrapper(a, a.TF4SF__Primary_Offer__c, a.TF4SF__Primary_Offer_Status__c, null)); }
+						if (m == 3) { appWrapper.add(new ApplicationWrapper(a, a.TF4SF__Second_Offer__c, a.TF4SF__Second_Offer_Status__c, null)); }
+						if (m == 4) { appWrapper.add(new ApplicationWrapper(a, a.TF4SF__Third_Offer__c, a.TF4SF__Third_Offer_Status__c, null)); }
 					}
 				}
 			}
@@ -577,7 +606,7 @@ public with sharing class Search_Member {
 		
 	}
 
-	public Integer getappPageNumber(){
+	public Integer getappPageNumber() {
 		if (assc != null) {
 			return assc.getPageNumber();
 		} else {
@@ -585,12 +614,12 @@ public with sharing class Search_Member {
 		}
 	}
 
-	public Integer getappTotalPages(){
+	public Integer getappTotalPages() {
 		if (assc != null) {
 			Decimal apptotalSize = assc.getResultSize();
 			Decimal apppageSize = assc.getPageSize();
 			Decimal apppages = apptotalSize/apppageSize;
-			
+
 			return (Integer)apppages.round(System.RoundingMode.CEILING);
 		} else {
 			return null;
@@ -604,15 +633,13 @@ public with sharing class Search_Member {
 			return null;
 		}
 	}
-	
+
 	public void clearAll() {
 		SSNQuery = '';
 		searchMsg = false;
 		searchMsgDetails = false;
 		ShowStartApplication = false;
 	}
-	
-	//Method to return all the account details records based on user input
 
 	public void appclearAll() {
 		appfirstnameQuery = '';

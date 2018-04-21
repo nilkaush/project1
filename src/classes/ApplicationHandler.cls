@@ -27,23 +27,37 @@ public class ApplicationHandler {
 				appProdMap.put(p.TF4SF__Application__c, new List<TF4SF__Products__c>{p});
 			}
 		}
-
+		List<Messaging.Emailfileattachment> fileAttachments = new List<Messaging.Emailfileattachment>();
+		List < TF4SF__Disclosure__c > listDisclosure = new List < TF4SF__Disclosure__c > ();
+		listDisclosure = [SELECT ID , name FROM TF4SF__Disclosure__c where name ='Privacy Notice'];
+		if ( listDisclosure.size () > 0 ) {
+			for (Attachment a : [SELECT Name, Body, BodyLength from Attachment WHERE ParentId = :listDisclosure[0].Id] )
+			{
+				Messaging.Emailfileattachment efa = new Messaging.Emailfileattachment();
+				efa.setFileName(a.Name);
+				efa.setBody(a.Body);
+				fileAttachments.add(efa);
+			}
+			
+		}
 		System.debug('------' + appProdMap.size());
 		List<Messaging.SingleEmailMessage> mailsList =  new List<Messaging.SingleEmailMessage>();
 		List<String> stipulations = new List<String>();
 
 		try {
+			System.debug('newList.size() in ApplicationHandler: ' + newList.size());
+			System.debug('newList in ApplicationHandler: ' + newList);
 			for (TF4SF__Application__c app : newList) {
 				Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
 				String emailBody;
 				System.debug('------' + oldMap.get(app.Id).TF4SF__Primary_Product_Status__c);
 				System.debug('-------' + app.TF4SF__Primary_Product_Status__c);
 
-				if (app.TF4SF__Primary_Product_Status__c == 'approved' && app.TF4SF__Application_Status__c == 'Submitted' && ((oldMap.get(app.Id).TF4SF__Primary_Product_Status__c != app.TF4SF__Primary_Product_Status__c) || (oldMap.get(app.Id).TF4SF__Application_Status__c != app.TF4SF__Application_Status__c))) {
+				if ((app.TF4SF__Primary_Product_Status__c == 'approved' || app.TF4SF__Primary_Product_Status__c == 'Approved Pending')  && app.TF4SF__Application_Status__c == 'Submitted' && ((oldMap.get(app.Id).TF4SF__Primary_Product_Status__c != app.TF4SF__Primary_Product_Status__c) || (oldMap.get(app.Id).TF4SF__Application_Status__c != app.TF4SF__Application_Status__c))) {
 					if (appProdMap.size() > 0) {
 						for (TF4SF__Products__c prd : appProdMap.get(app.Id)) {
 							if (prd.TF4SF__Product_Name__c == app.TF4SF__Sub_Product__c) {// && String.isNotBlank(String.ValueOf(prd.TF4SF__Term__c)) && String.isNotBlank(String.ValueOf(prd.TF4SF__Rate__c)) && String.isNotBlank(String.ValueOf(prd.TF4SF__Requested_Loan_Amount__c))) {
-								if (prd.TF4SF__Product_Name__c.contains('Vehicle Loans') && app.TF4SF__Current_Channel__c == 'Online') {
+								if (prd.TF4SF__Product_Name__c.contains('Vehicle Loans') && (app.TF4SF__Current_Channel__c == 'Online' || app.TF4SF__Current_Channel__c == 'BizDev')) {
 									templateId = etMap.get('Online_Application_Approved_Auto_Loan');
 									System.debug('templateId: ' + templateId);
 									stipulations.add('Current Photo Identification');
@@ -72,7 +86,7 @@ public class ApplicationHandler {
 									}
 
 									if (prd.TF4SF__Rate__c != null) {
-										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c));
+										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c.setScale(2)));
 									} else {
 										emailBody = emailBody.Replace('{!Products__c.Rate__c}', '');
 									}
@@ -92,10 +106,14 @@ public class ApplicationHandler {
 									String orgIds = '';
 									if (emailMap.containsKey('sukesh.gurmekodi@terafinainc.com')) { orgIds = emailMap.get('sukesh.gurmekodi@terafinainc.com'); }
 									mail.setOrgWideEmailAddressId(orgIds);
+									// Attached privacy Notice pdf in the email
+									if ( fileAttachments.size() > 0 ) {
+										//mail.setFileAttachments(fileAttachments);	
+									}
 									mailsList.add(mail);
 								}
 
-								if (prd.TF4SF__Product_Name__c.contains('Personal Loan') && app.TF4SF__Current_Channel__c == 'Online') {
+								if (prd.TF4SF__Product_Name__c.contains('Personal Loan') && ( app.TF4SF__Current_Channel__c == 'Online' || app.TF4SF__Current_Channel__c == 'BizDev')) {
 									templateId = etMap.get('Online_Application_Approved_Personal_Loans');
 									System.debug('templateId: ' + templateId);
 									stipulations.add('Current Photo Identification');
@@ -125,13 +143,14 @@ public class ApplicationHandler {
 									}
 
 									if (prd.TF4SF__Rate__c != null) {
-										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c));
+										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c.setScale(2)));
 									} else {
 										emailBody = emailBody.Replace('{!Products__c.Rate__c}', '');
 									}
 
 									emailBody = emailBody.Replace(']]>','');
 									mail.setHtmlBody(emailBody);
+
 									if (app.TF4SF__Email_Address__c != null || app.TF4SF__Email_Address__c != '') {
 										mail.toAddresses = new String[]{app.TF4SF__Email_Address__c} ;
 										emailAddress = true;
@@ -145,10 +164,14 @@ public class ApplicationHandler {
 									String orgIds = '';
 									if (emailMap.containsKey('sukesh.gurmekodi@terafinainc.com')) { orgIds = emailMap.get('sukesh.gurmekodi@terafinainc.com'); }
 									mail.setOrgWideEmailAddressId(orgIds);
+									// Attached privacy Notice pdf in the email
+									if ( fileAttachments.size() > 0 ) {
+										//mail.setFileAttachments(fileAttachments);	
+									}
 									mailsList.add(mail);
 								}
 
-								if (prd.TF4SF__Product_Name__c.contains('Credit Card') && app.TF4SF__Current_Channel__c == 'Online') {
+								if (prd.TF4SF__Product_Name__c.contains('Credit Card') && ( app.TF4SF__Current_Channel__c == 'Online'  || app.TF4SF__Current_Channel__c == 'BizDev' )) {
 									templateId = etMap.get('Online_Application_Approved_Credit_Card');
 									System.debug('templateId: ' + templateId);
 									stipulations.add('Current Photo Identification');
@@ -164,6 +187,7 @@ public class ApplicationHandler {
 									mail.setTemplateId(templateId.Id);
 									emailBody = emailBody.replace('{!TF4SF__Application__c.TF4SF__First_Name__c}', app.TF4SF__Full_Name_PA__c);
 									emailBody = emailBody.Replace('{!Stipulations}', stipulation);
+
 									if (prd.TF4SF__Product_Name__c != null) {
 										emailBody = emailBody.Replace('{!TF4SF__Products__c.TF4SF__Product_Name__c}', String.ValueOf(prd.TF4SF__Product_Name__c));
 									} 
@@ -181,7 +205,7 @@ public class ApplicationHandler {
 									}
 
 									if (prd.TF4SF__Rate__c != null) {
-										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c));
+										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c.setScale(2)));
 									} else {
 										emailBody = emailBody.Replace('{!Products__c.Rate__c}', '');
 									}
@@ -201,6 +225,10 @@ public class ApplicationHandler {
 									String orgIds = '';
 									if (emailMap.containsKey('sukesh.gurmekodi@terafinainc.com')) { orgIds = emailMap.get('sukesh.gurmekodi@terafinainc.com'); }
 									mail.setOrgWideEmailAddressId(orgIds);
+									// Attached privacy Notice pdf in the email
+									if ( fileAttachments.size() > 0 ) {
+										//mail.setFileAttachments(fileAttachments);	
+									}
 									mailsList.add(mail);
 								}
 
@@ -236,13 +264,14 @@ public class ApplicationHandler {
 									}
 
 									if (prd.TF4SF__Rate__c != null) {
-										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c));
+										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c.setScale(2)));
 									} else {
 										emailBody = emailBody.Replace('{!Products__c.Rate__c}', '');
 									}
 
 									emailBody = emailBody.Replace(']]>','');
 									mail.setHtmlBody(emailBody);
+
 									if (app.TF4SF__Email_Address__c != null || app.TF4SF__Email_Address__c != '') {
 										mail.toAddresses = new String[]{app.TF4SF__Email_Address__c} ;
 										emailAddress = true;
@@ -256,6 +285,10 @@ public class ApplicationHandler {
 									String orgIds = '';
 									if (emailMap.containsKey('sukeshg@novigosolutions.com')) { orgIds = emailMap.get('sukeshg@novigosolutions.com'); }
 									mail.setOrgWideEmailAddressId(orgIds);
+									// Attached privacy Notice pdf in the email
+									if ( fileAttachments.size() > 0 ) {
+										//mail.setFileAttachments(fileAttachments);	
+									}
 									mailsList.add(mail);
 								}
 
@@ -289,7 +322,7 @@ public class ApplicationHandler {
 									}
 
 									if (prd.TF4SF__Rate__c != null) {
-										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c));
+										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c.setScale(2)));
 									} else {
 										emailBody = emailBody.Replace('{!Products__c.Rate__c}', '');
 									}
@@ -309,6 +342,10 @@ public class ApplicationHandler {
 									String orgIds = '';
 									if (emailMap.containsKey('sukeshg@novigosolutions.com')) { orgIds = emailMap.get('sukeshg@novigosolutions.com'); }
 									mail.setOrgWideEmailAddressId(orgIds);
+									// Attached privacy Notice pdf in the email
+									if ( fileAttachments.size() > 0 ) {
+										//mail.setFileAttachments(fileAttachments);	
+									}
 									mailsList.add(mail);
 								}
 
@@ -348,13 +385,14 @@ public class ApplicationHandler {
 									}
 
 									if (prd.TF4SF__Rate__c != null) {
-										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c));
+										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c.setScale(2)));
 									} else {
 										emailBody = emailBody.Replace('{!Products__c.Rate__c}', '');
 									}
 
 									emailBody = emailBody.Replace(']]>','');
 									mail.setHtmlBody(emailBody);
+
 									if (app.TF4SF__Email_Address__c != null || app.TF4SF__Email_Address__c != '') {
 										mail.toAddresses = new String[]{app.TF4SF__Email_Address__c} ;
 										emailAddress = true;
@@ -368,6 +406,10 @@ public class ApplicationHandler {
 									String orgIds = '';
 									if (emailMap.containsKey('sukeshg@novigosolutions.com')) { orgIds = emailMap.get('sukeshg@novigosolutions.com'); }
 									mail.setOrgWideEmailAddressId(orgIds);
+									// Attached privacy Notice pdf in the email
+									if ( fileAttachments.size() > 0 ) {
+										//mail.setFileAttachments(fileAttachments);	
+									}
 									mailsList.add(mail);
 								}
 
@@ -396,6 +438,10 @@ public class ApplicationHandler {
 									String orgIds = '';
 									if (emailMap.containsKey('sandesh.naik@terafinainc.com')) { orgIds = emailMap.get('sandesh.naik@terafinainc.com'); }
 									mail.setOrgWideEmailAddressId(orgIds);
+									// Attached privacy Notice pdf in the email
+									if ( fileAttachments.size() > 0 ) {
+										mail.setFileAttachments(fileAttachments);	
+									}
 									mailsList.add(mail);
 								}
 							}
@@ -404,11 +450,11 @@ public class ApplicationHandler {
 				}
 
 				//****************************************Pending Review EMAILS*********************************************
-				if ((app.TF4SF__Primary_Product_Status__c == 'Pending Review' || app.TF4SF__Primary_Product_Status__c == 'Referred' || app.TF4SF__Primary_Product_Status__c == 'Incomplete' || app.TF4SF__Primary_Product_Status__c == 'Pending approval by institution employee' || app.TF4SF__Primary_Product_Status__c == 'Fraud' || app.TF4SF__Primary_Product_Status__c == 'Approved Pending' || app.TF4SF__Primary_Product_Status__c == 'Need More Info' || app.TF4SF__Primary_Product_Status__c == 'Pending'|| app.TF4SF__Primary_Product_Status__c == 'Inquiring' || app.TF4SF__Primary_Product_Status__c == 'Member Waiting' ||  app.TF4SF__Primary_Product_Status__c == 'Review') && app.TF4SF__Application_Status__c == 'Submitted'  && (oldMap.get(app.Id).TF4SF__Primary_Product_Status__c != app.TF4SF__Primary_Product_Status__c || oldMap.get(app.Id).TF4SF__Application_Status__c != app.TF4SF__Application_Status__c)) {
+				if ((app.TF4SF__Primary_Product_Status__c == 'Pending Review' || app.TF4SF__Primary_Product_Status__c == 'Referred' || app.TF4SF__Primary_Product_Status__c == 'Incomplete' || app.TF4SF__Primary_Product_Status__c == 'Pending approval by institution employee' || app.TF4SF__Primary_Product_Status__c == 'Fraud' || app.TF4SF__Primary_Product_Status__c == 'Duplicate' || app.TF4SF__Primary_Product_Status__c == 'Member Declined Credit'  || app.TF4SF__Primary_Product_Status__c == 'Need More Info' || app.TF4SF__Primary_Product_Status__c == 'Pending'|| app.TF4SF__Primary_Product_Status__c == 'Inquiring' || app.TF4SF__Primary_Product_Status__c == 'Member Waiting' ||  app.TF4SF__Primary_Product_Status__c == 'Review') && app.TF4SF__Application_Status__c == 'Submitted'  && (oldMap.get(app.Id).TF4SF__Primary_Product_Status__c != app.TF4SF__Primary_Product_Status__c || oldMap.get(app.Id).TF4SF__Application_Status__c != app.TF4SF__Application_Status__c)) {
 					if (appProdMap.size() > 0) {
 						for (TF4SF__Products__c prd : appProdMap.get(app.Id)) {
 							if (prd.TF4SF__Product_Name__c == app.TF4SF__Sub_Product__c) {
-								if (prd.TF4SF__Product_Name__c.contains('Vehicle Loans') && app.TF4SF__Current_Channel__c == 'Online') {
+								if (prd.TF4SF__Product_Name__c.contains('Vehicle Loans') && ( app.TF4SF__Current_Channel__c == 'Online' || app.TF4SF__Current_Channel__c == 'BizDev' )) {
 									templateId = etMap.get('Online_Application_Received_Auto_Loan');
 									System.debug('templateId: ' + templateId);
 									stipulations.add('Current Photo Identification');
@@ -438,13 +484,14 @@ public class ApplicationHandler {
 									}
 
 									if (prd.TF4SF__Rate__c!= null) {
-										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c));
+										emailBody = emailBody.Replace('{!Products__c.Rate__c}', String.ValueOf(prd.TF4SF__Rate__c.setScale(2)));
 									} else {
 										emailBody = emailBody.Replace('{!Products__c.Rate__c}', '');
 									}
 
 									emailBody = emailBody.Replace(']]>','');
 									mail.setHtmlBody(emailBody);
+
 									if (app.TF4SF__Email_Address__c != null || app.TF4SF__Email_Address__c != '') {
 										mail.toAddresses = new String[]{ app.TF4SF__Email_Address__c };
 										emailAddress = true;
@@ -461,7 +508,7 @@ public class ApplicationHandler {
 									mailsList.add(mail);
 								}
 
-								if (prd.TF4SF__Product_Name__c.contains('Personal Loan') && app.TF4SF__Current_Channel__c == 'Online') {
+								if (prd.TF4SF__Product_Name__c.contains('Personal Loan') && ( app.TF4SF__Current_Channel__c == 'Online' || app.TF4SF__Current_Channel__c == 'BizDev' )) {
 									templateId = etMap.get('Online_Application_Received_Personal_Loans');
 									System.debug('templateId: ' + templateId);
 									emailBody = templateId.HTMLValue;
@@ -470,6 +517,7 @@ public class ApplicationHandler {
 									emailBody = emailBody.replace('{!TF4SF__Application__c.TF4SF__Full_Name_PA__c}', app.TF4SF__Full_Name_PA__c);
 									emailBody = emailBody.Replace(']]>','');
 									mail.setHtmlBody(emailBody);
+
 									if (app.TF4SF__Email_Address__c != null || app.TF4SF__Email_Address__c != '') {
 										mail.toAddresses = new String[]{app.TF4SF__Email_Address__c} ;
 										emailAddress = true;
@@ -486,7 +534,7 @@ public class ApplicationHandler {
 									mailsList.add(mail);
 								}
 
-								if (prd.TF4SF__Product_Name__c.contains('Credit Card') && app.TF4SF__Current_Channel__c == 'Online'){
+								if (prd.TF4SF__Product_Name__c.contains('Credit Card') && ( app.TF4SF__Current_Channel__c == 'Online' || app.TF4SF__Current_Channel__c == 'BizDev' )) {
 									templateId = etMap.get('Online_Application_Received_Credit_Card');
 									System.debug('templateId: ' + templateId);
 									emailBody = templateId.HTMLValue;
@@ -495,6 +543,7 @@ public class ApplicationHandler {
 									emailBody = emailBody.replace('{!TF4SF__Application__c.TF4SF__Full_Name_PA__c}', app.TF4SF__Full_Name_PA__c);
 									emailBody = emailBody.Replace(']]>','');
 									mail.setHtmlBody(emailBody);
+
 									if (app.TF4SF__Email_Address__c != null || app.TF4SF__Email_Address__c != '') {
 										mail.toAddresses = new String[]{app.TF4SF__Email_Address__c} ;
 										emailAddress = true;
@@ -516,6 +565,7 @@ public class ApplicationHandler {
 									templateId = etMap.get('Deposit_Referred');
 									System.debug('emailBody: ' + emailBody);
 									mail.setTemplateId(templateId.Id);
+
 									if (app.TF4SF__Email_Address__c != null || app.TF4SF__Email_Address__c != '') {
 										mail.toAddresses = new String[]{app.TF4SF__Email_Address__c} ;
 										emailAddress = true;
@@ -538,7 +588,7 @@ public class ApplicationHandler {
 
 				//Instant Approved for Deposit 
 				if ((app.TF4SF__Primary_Product_Status__c).touppercase() == 'INSTANT APPROVED' && app.TF4SF__Application_Status__c == 'Submitted' && (oldMap.get(app.Id).TF4SF__Primary_Product_Status__c != app.TF4SF__Primary_Product_Status__c  || oldMap.get(app.Id).TF4SF__Application_Status__c != app.TF4SF__Application_Status__c)) {
-					if (appProdMap.size() > 0){
+					if (appProdMap.size() > 0) {
 						for (TF4SF__Products__c prd : appProdMap.get(app.Id)) {
 							if (prd.TF4SF__Product_Name__c == app.TF4SF__Sub_Product__c) {
 								if (prd.TF4SF__Product_Name__c.contains('Checking') || prd.TF4SF__Product_Name__c.contains('Certificates') || prd.TF4SF__Product_Name__c.contains('Savings')) {
@@ -546,6 +596,7 @@ public class ApplicationHandler {
 									System.debug('emailBody: ' + emailBody);
 									mail.setTemplateId(templateId.Id);
 									mail.setWhatId(app.id);
+
 									if (app.TF4SF__Email_Address__c != null || app.TF4SF__Email_Address__c != '') {
 										mail.toAddresses = new String[]{app.TF4SF__Email_Address__c} ;
 										emailAddress = true;
@@ -558,6 +609,10 @@ public class ApplicationHandler {
 									String orgIds = '';
 									if (emailMap.containsKey('sandesh.naik@terafinainc.com')) { orgIds = emailMap.get('sandesh.naik@terafinainc.com'); }
 									mail.setOrgWideEmailAddressId(orgIds);
+									// Attached privacy Notice pdf in the email
+									if ( fileAttachments.size() > 0 ) {
+										mail.setFileAttachments(fileAttachments);	
+									}
 									mailsList.add(mail);
 								}
 							}
@@ -565,16 +620,17 @@ public class ApplicationHandler {
 					}
 				}
 
-				//Declined Email
+				//Declined Email On hold - KP-947
 				 if ((app.TF4SF__Primary_Product_Status__c).touppercase() == 'DECLINED' && app.TF4SF__Application_Status__c == 'Submitted' && (oldMap.get(app.Id).TF4SF__Primary_Product_Status__c != app.TF4SF__Primary_Product_Status__c || oldMap.get(app.Id).TF4SF__Application_Status__c != app.TF4SF__Application_Status__c) && app.TF4SF__Customer__c != null) {
 					if (appProdMap.size() > 0) {
 						for (TF4SF__Products__c prd : appProdMap.get(app.Id)) {
 							if (prd.TF4SF__Product_Name__c == app.TF4SF__Sub_Product__c) {
-								if (prd.TF4SF__Product_Name__c.contains('Checking') || prd.TF4SF__Product_Name__c.contains('Certificates') || prd.TF4SF__Product_Name__c.contains('Savings')) {
+								//if (prd.TF4SF__Product_Name__c.contains('Checking') || prd.TF4SF__Product_Name__c.contains('Certificates') || prd.TF4SF__Product_Name__c.contains('Savings')) {
 									templateId = etMap.get('Deposit_Application_Declined');
 									System.debug('emailBody: ' + emailBody);
 									mail.setTemplateId(templateId.Id);
 									mail.setWhatId(app.id);
+
 									if (app.TF4SF__Email_Address__c != null || app.TF4SF__Email_Address__c != '') {
 										mail.toAddresses = new String[]{app.TF4SF__Email_Address__c} ;
 										emailAddress = true;
@@ -587,8 +643,8 @@ public class ApplicationHandler {
 									String orgIds = '';
 									if (emailMap.containsKey('sandesh.naik@terafinainc.com')) { orgIds = emailMap.get('sandesh.naik@terafinainc.com'); }
 									mail.setOrgWideEmailAddressId(orgIds);
-									mailsList.add(mail);
-								}
+									//mailsList.add(mail); 
+								//}
 							}
 						}
 					}

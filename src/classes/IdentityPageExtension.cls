@@ -1,9 +1,12 @@
 global class IdentityPageExtension implements TF4SF.DSP_Interface {
 	global List<TF4SF__application__c> aList = new List<TF4SF__application__c>();
-	global String subCoreJson;
+	global Map<String, String> subCoreJson = new Map<String, String>();
 	global String questionId;
 	global List<KYC_OOW__c> kycList;
+
 	global Map<String, String> main(Map<String, String> tdata) {
+		Long time1 = DateTime.now().getTime();
+		Boolean infoDebug = (tdata.get('infoDebug') == 'true');
 		Map<String, String> data = tdata.clone();
 
 		try {
@@ -15,10 +18,11 @@ global class IdentityPageExtension implements TF4SF.DSP_Interface {
 			kycList = [SELECT Id,Question_1_Response__c FROM KYC_OOW__c WHERE Application_Id__c = :appId];
 			if (String.isBlank(productId)) { productId = application[0].ProductId__c; }
 			subCoreJson = SubmitToCore.JSONGenerator(data);
-			if(!subCoreJson.Contains('Server Error') ){
-			List<Object> k1 = (List<Object>)JSON.deserializeUntyped(subCoreJson); 
-			Map<String, Object> k = (Map<String, Object>)k1[0];
-			}
+
+			/*if (!subCoreJson.Contains('Server Error')) {
+				List<Object> k1 = (List<Object>)JSON.deserializeUntyped(subCoreJson); 
+				Map<String, Object> k = (Map<String, Object>)k1[0];
+			}*/
 
 			/*if (k.get('success') == true) {
 				a.App_Submitted_to_Alfa__c = true;
@@ -26,7 +30,7 @@ global class IdentityPageExtension implements TF4SF.DSP_Interface {
 				a.App_Submitted_to_Alfa__c = false;
 			}*/
 
-			/*if(application[0].TF4SF__Current_Channel__c != 'Online' && application[0].TF4SF__Current_Channel__c != 'BizDev') {
+			/*if (application[0].TF4SF__Current_Channel__c != 'Online' && application[0].TF4SF__Current_Channel__c != 'BizDev') {
 			Map<String, String> JsonResponseKYC = KYCRequestMethod(appId, productId); 
 			System.debug('Jsonresponsekyc: ' + JsonResponseKYC.get('KYC Response'));
 			if (!JsonResponseKYC.ContainsKey('KYC Response Failed')) { data.put('CreditReport', JsonResponseKYC.get('KYC Response')); }
@@ -40,22 +44,25 @@ global class IdentityPageExtension implements TF4SF.DSP_Interface {
 				String JsonResponseOOW = OOWQuestionsRequestMethod(productId, appId);
 				JsonResponseOOW = OOWJSONGenerator.jsonMethod(JsonResponseOOW);
 				System.debug('questionIdiden: ' + questionId);
-				if((KYCList.size() == 0 || String.isBlank(KYCList[0].Question_1_Response__c)) && String.isNotBlank(JsonResponseOOW)) {
-					data.put('primaryInfoResponse', JsonResponseOOW);
-				}
+				if ((KYCList.size() == 0 || String.isBlank(KYCList[0].Question_1_Response__c)) && String.isNotBlank(JsonResponseOOW)) { data.put('primaryInfoResponse', JsonResponseOOW); }
 				data.put('questionId', questionId);
 				//if (aList.size() > 0 && String.isNotBlank(JsonResponseOOW)) { update aList; }
 			}
 
-			
 			/*else {
 				if (aList.size() > 0) { update aList; }
 			}*/
-			//LogStorage.InsertDebugLog(appId, 'KYC Response', 'KYC Callout');
+			LogStorage.InsertDebugLog(appId, subCoreJson.get('coreReq'), 'IdentityPage Request');
+			LogStorage.InsertDebugLog(appId, subCoreJson.get('coreRes'), 'IdentityPage Response');
 		} catch (Exception e) {
-			data.put('server-errors', 'Error encountered in IdentityPageExtension class: ' + e.getMessage());
+			data.put('server-errors', 'Error encountered in IdentityPageExtension class: ' + e.getMessage() + '; line: ' + e.getLineNumber() + '; type: ' + e.getTypeName() + '; stack trace: ' + e.getStackTraceString());
+			ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR, 'Error encountered in IdentityPageExtension class: ' + e.getMessage() + '; line: ' + e.getLineNumber() + '; type: ' + e.getTypeName() + '; stack trace: ' + e.getStackTraceString()));
 			System.debug('server-errors: ' + e.getMessage());
 		}
+
+		Long time2 = DateTime.now().getTime();
+		if (infoDebug == true ) { data.put('debug-server-errors', 'IdentityPageExtension - Elapsed Call Time: ' + (time2 - time1) + 'ms'); }
+		ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.INFO, 'IdentityPageExtension - Elapsed Call Time: ' + (time2 - time1) + 'ms'));
 
 		return data;
 	}
@@ -68,7 +75,7 @@ global class IdentityPageExtension implements TF4SF.DSP_Interface {
 		String body = '';
 		//Id appId = [SELECT Id FROM TF4SF__application__c WHERE ProductId__c = :productId LIMIT 1].Id;
 		req.setTimeout(120 * 1000);  //120 seconds
-		System.debug('productId: ' + productId);   
+		System.debug('productId: ' + productId);
 		String authorizationHeader;
 
 		if (aPack.Enable_Production__c == false) {
@@ -106,7 +113,6 @@ global class IdentityPageExtension implements TF4SF.DSP_Interface {
 		}
 
 		System.debug('k1 response: ' + k1);
-
 		if (k.get('Success') == true) {
 			Map<String, Object> l = (Map<String, Object>)k.get('value');
 			System.debug('l response: ' + l);
@@ -182,7 +188,7 @@ global class IdentityPageExtension implements TF4SF.DSP_Interface {
 
 		return responseJson;
 	}
-	
+
 	public void parseResponse(String appId, String js) {
 		//Map<String, Object> k = (Map<String, Object>)JSON.deserializeUntyped(js); 
 		List<Object> k1 = (List<Object>)JSON.deserializeUntyped(js); 
@@ -245,7 +251,7 @@ global class IdentityPageExtension implements TF4SF.DSP_Interface {
 							}
 						}
 					}
-					
+
 					if (i == 1) {
 						objKYC.Question_2_Text__c = string.valueof(m.get('question'));
 						List<Object> oo = (List<Object>)m.get('answers');
@@ -278,7 +284,7 @@ global class IdentityPageExtension implements TF4SF.DSP_Interface {
 							}
 						}
 					}
-					
+
 					if (i == 2) {
 						objKYC.Question_3_Text__c = string.valueof(m.get('question'));
 						List<Object> oo = (List<Object>)m.get('answers');
@@ -311,10 +317,42 @@ global class IdentityPageExtension implements TF4SF.DSP_Interface {
 							}
 						}
 					}
+
+					if (i == 3) {
+						objKYC.Question_4_Text__c = string.valueof(m.get('question'));
+						List<Object> oo = (List<Object>)m.get('answers');
+
+						for (Integer j = 0; j < oo.size(); j++) {
+							// Map<String,Object> m1 = (Map<String,Object>)o1;
+							if (j == 0) {
+								objKYC.Question_4_Choice_1__c = string.valueof(oo[0]);
+								System.debug('objKYC==>' + objKYC);
+							}
+
+							if (j == 1) {
+								objKYC.Question_4_Choice_2__c = string.valueof(oo[1]);
+								System.debug('objKYC==>' + objKYC);
+							}
+
+							if (j == 2) {
+								objKYC.Question_4_Choice_3__c = string.valueof(oo[2]);
+								System.debug('objKYC==>' + objKYC);
+							}
+
+							if (j == 3) {
+								objKYC.Question_4_Choice_4__c = string.valueof(oo[3]);
+								System.debug('objKYC==>' + objKYC);
+							}
+
+							if (j == 4) {
+								objKYC.Question_4_Choice_5__c = string.valueof(oo[4]);
+								System.debug('objKYC==>' + objKYC);
+							}
+						}
+					}
 				}
-				if(kycList.size()==0) {
-					insert objKYC;
-				}
+
+				if (kycList.size() == 0) { insert objKYC; }
 			}
 		}
 	}

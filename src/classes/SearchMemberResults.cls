@@ -7,7 +7,7 @@ global class SearchMemberResults {
 	global TF4SF__Application_Configuration__c appConfig = TF4SF__Application_Configuration__c.getOrgDefaults();
 	global String result{get; set;}
 	global String customerNumber{get; set;}
-	global String custId{get; set;}
+	global Static String custId;
 	global TF4SF__Customer__c customer{get; set;}
 	global String CustomerId {get; set;}
 	global String Customer_Id {get; set;}
@@ -40,12 +40,13 @@ global class SearchMemberResults {
 	global String Id_ExpirationDate {get; set;}
 	global String Id_IssueDate {get; set;}
 	global List<Object> Accounts {get; set;}
-	global String cached_timestamp {get; set;} 
+	global String cached_timestamp {get; set;}
 	global String Account_id {get; set;} 
 	global List<String> flags {get; set;}
 	global String isEmployee {get; set;}
 	global String idType {get; set;}
-	
+	global Map<String, String> phnTypeMap {get; set;}
+
 	global SearchMemberResults(ApexPages.StandardController controller) {
 		this.customer = (TF4SF__Customer__c)controller.getrecord();
 		custId = ApexPages.currentpage().getparameters().get('id');
@@ -54,7 +55,7 @@ global class SearchMemberResults {
 		version = ApexPages.currentPage().getParameters().get('v');
 		customerNumber = [SELECT Id, TF4SF__Person_Identifier__c FROM TF4SF__Customer__c WHERE Id = :custId].TF4SF__Person_Identifier__c;
 		System.debug('%%%%% ' + customerNumber);
-		result = SearchResults(customerNumber);
+		if (customerNumber != null) { result = SearchResults(customerNumber); }
 	}
 
 	global class MemberData {
@@ -126,9 +127,11 @@ global class SearchMemberResults {
 	private static String getRandomString(Integer len) {
 		String mode = String.valueOf(RANDOM_CHARS.length() - 1);
 		String retVal = '';
+
 		if (len != null && len >= 1) {
 			Integer chars = 0;
 			Integer random;
+
 			do {
 				random = Math.round(Math.random() * Integer.valueOf(mode));
 				retVal += RANDOM_CHARS.substring(random, random + 1);
@@ -144,7 +147,7 @@ global class SearchMemberResults {
 	}
 
 	public static string decrypt(String cipherText) {
-		return crypto.decryptWithManagedIV('AES128',key, EncodingUtil.base64Decode(cipherText)).toString();
+		return crypto.decryptWithManagedIV('AES128', key, EncodingUtil.base64Decode(cipherText)).toString();
 	}
 
 	public static void setAppToken(TF4SF__Application__c app) {
@@ -159,6 +162,7 @@ global class SearchMemberResults {
 		pageReference p = postDetails();
 		return p;
 	}
+
 	public pageReference startDepositApp() {
 		prodType = 'Deposit';
 		pageReference p = postDetails();
@@ -166,12 +170,17 @@ global class SearchMemberResults {
 	}
 
 	public PageReference postDetails() {
+		if (ApexPages.currentPage().getParameters().containsKey('id') && ApexPages.currentPage().getParameters().get('id') != '') {
+			custId = apexpages.currentpage().getparameters().get('id');
+			System.debug('--custId' + custId);
+		}
+
 		PageReference p = null;
 		String appId = null;
 		String url1 = '&flag=false';
 		String url = TF4SF__SiteUrl__c.getOrgDefaults().TF4SF__Url__c + 'OnlineLinks?';
 		if (version != null) { url += 'v=' + version + '&'; }
-		if(String.isNotBlank(prodType)) { url1 += '&productType='+ prodType;}
+		if (String.isNotBlank(prodType)) { url1 += '&productType='+ prodType; }
 		url += 'id=';
 		System.debug('the url generated is ' + url);
 
@@ -209,9 +218,9 @@ global class SearchMemberResults {
 				//Fix for DL details not showing up in start application from 360 degree view
 				personDataMap.put('identificationNumber', IdentificationNumber);
 				personDataMap.put('idState', IdState );
-				
+
 				List<String> expDate_List = Id_ExpirationDate.split('-');
-				Id_ExpirationDate = expDate_List[1] + '/' + expDate_List[2] + '/' + expDate_List[0];                
+				Id_ExpirationDate = expDate_List[1] + '/' + expDate_List[2] + '/' + expDate_List[0];
 				personDataMap.put('id_ExpirationDate', Id_ExpirationDate);
 				System.debug('identificationType: '+identificationType);
 				personDataMap.put('idType', identificationType);
@@ -239,6 +248,7 @@ global class SearchMemberResults {
 				TF4SF__Application__c app = [SELECT Id, TF4SF__User_Token__c FROM TF4SF__Application__c WHERE Id = :appId];
 				setAppToken(app);
 				update app;
+
 				String userToken = decrypt(app.TF4SF__User_Token__c);
 				String userId = UserInfo.getUserId();
 				Cookie id = ApexPages.currentPage().getCookies().get('id');
@@ -252,7 +262,7 @@ global class SearchMemberResults {
 
 				// Set the new cookie for the page
 				ApexPages.currentPage().setCookies(new Cookie[]{id, ut});
-				p = new PageReference(TF4SF__SiteUrl__c.getOrgDefaults().TF4SF__Url__c + 'OnlineLinks?id=' + appId + '&usr=' + userId+url1);
+				p = new PageReference(TF4SF__SiteUrl__c.getOrgDefaults().TF4SF__Url__c + 'OnlineLinks?id=' + appId + '&usr=' + userId + url1);
 				p.setRedirect(true);
 				System.debug('the url generated is ' + p);
 			} else {
@@ -264,19 +274,20 @@ global class SearchMemberResults {
 			//String s = OfflineApplicationExceptionHandling.createApplication();
 			// p = new PageReference(url + s);
 		}
-		
+
 		return p;
 	}
-	
+
 	global String SearchResults (String customerNumber) {
 		Alpha_Pack__c alpha = Alpha_Pack__c.getOrgDefaults();
+		String rtnStr = null;
 		String url = '';
 		String header = '';
 		String responseJson = '';
 
 		if (alpha.Enable_Production__c == true) {
 			url = alpha.Production_URL__c;
-			header = 'JWT ' + alpha.Production_Token__c;      
+			header = 'JWT ' + alpha.Production_Token__c;
 		} else {
 			url = alpha.Sandbox_URL__c;
 			header = 'JWT ' + alpha.Sandbox_Token__c;
@@ -285,7 +296,7 @@ global class SearchMemberResults {
 		//ssn = '354822777';
 		HttpRequest req = new HttpRequest();
 		String body = '';
-		req.setTimeout(120 * 1000);  //120 seconds
+		req.setTimeout(120 * 1000); //120 seconds
 		//req.setEndpoint('callout:Ameris_Test_Named_Credential/AmerisIPService/tfapi/application');
 		url += 'api/cache/customers/?customerid=' + customerNumber + '&fullaccounts=false';
 		req.setEndpoint(url);
@@ -295,9 +306,9 @@ global class SearchMemberResults {
 		req.setHeader('Accept', 'application/json');
 		Http http = new Http();
 		HttpResponse response;
-		response = http.send(req); 
-		System.debug('request searchMember: '+req);
-		System.debug('response SearchMember: '+response.getbody());
+		response = http.send(req);
+		System.debug('request searchMember: ' + req);
+		System.debug('response SearchMember: ' + response.getbody());
 		if (response.getStatusCode() != 200) {
 			String errorMsg = 'bad http status:' + response.getStatusCode() + ' ' + response.getStatus();
 		}
@@ -306,8 +317,12 @@ global class SearchMemberResults {
 		System.debug('Response: ' + responseJson);
 		//InsertDebugLog(appId, json, 'TIPIntegraion Request');
 		//InsertDebugLog(appId, responseJSON, 'TIPIntegraion Response');
-		ResponseSearch(responseJson);
-		return responseJson;
+		if (responseJson != null ) {
+			ResponseSearch(responseJson);
+			rtnStr = responseJson;
+		}
+
+		return rtnStr;
 	}
 
 	global void ResponseSearch (String response) {
@@ -316,13 +331,15 @@ global class SearchMemberResults {
 		//ResponseJ = '[{"success":true,"value":[{"cached_timestamp":"2017-11-24T00:00:00","id":"386975","type":"PERSON","registration_date":"2013-12-10","first_name":"TEST","middle_name":"ACCOUNT","last_name":"APPLE","suffix":null,"birth_date":"1950-01-01","federal_id":"888111111","member_id":"156520","married":false,"spouse_id":null,"immigration_status":"US Citizen","country_of_citizenship":"USA","fico_score":null,"fico_score_date":null,"financial_institution_relationships":["CUST"],"last_contact_date":"2015-08-12","last_detail_update_date":null,"passphrase":null,"primary_email_address":"safaribrowsertest@me.com","email_addresses":["safaribrowsertest@me.com"],"primary_phone_number":null,"phone_numbers":["4088051677"],"primary_occupancy_address":{"address_lines":["2805 BOWERS AVE"],"township":"SANTA CLARA","state_code":"CA","country_code":"USA","zip_code":"95051"},"occupancy_addresses":[{"address_lines":["2805 BOWERS AVE"],"township":"SANTA CLARA","state_code":"CA","country_code":"USA","zip_code":"95051"}],"statement_delivery_method":"EMAIL","identification_documents":[{"type":"Unexpired Drivers License","id":"A1234567","state_code":"CA","country_code":"USA","expiration_date":"2016-01-01","issue_date":"2010-01-01"}],"accounts":[{"relationship":"Tax Reported Owner             ","id":"44151356"},{"relationship":"Tax Reported Owner             ","id":"44151390"}],"flags":["PERN","NOTE","BAI2","VADD","EXPL","EMP"]}],"error_type":null,"error_message":null}]';
 		//*****************************************Dummy response********************************
 		List<Object> a = (List<Object>)JSON.deserializeUntyped(ResponseJ);
-		System.debug('the response is ' + a[0]);
+		System.debug('the response a is ' + a[0]);
 		Map<String, Object> m = (Map<String, Object>)a[0];
-		System.debug('the response is ' + m.get('value'));
+		System.debug('the response m is ' + m.get('value'));
 		List<Object> k = (List<Object>)m.get('value');
+		System.debug('the response k is ' + k);
 
 		for (Object u : k) {
 			Map<String, Object> l = (Map<String, Object>)u;
+			System.debug('the response l is ' + l);
 			DateOfBirth = String.valueOf(l.get('birth_date'));
 			SSNDisplay = String.valueOf(l.get('federal_id'));
 			CustomerId = String.valueOf(l.get('id'));
@@ -330,21 +347,38 @@ global class SearchMemberResults {
 			MiddleName = String.valueOf(l.get('middle_name'));
 			LastName = String.valueOf(l.get('last_name'));
 			PrimaryEmail = String.valueOf(l.get('primary_email_address'));
-			PrimaryPhone = String.valueOf(l.get('primary_phone_number'));
+			//PrimaryPhone = String.valueOf(l.get('primary_phone_number'));
 			List<Object> phnNum = (List<Object>)l.get('phone_numbers');
-			if (String.isBlank(PrimaryPhone) && phnNum.size() > 0) { PrimaryPhone = String.ValueOf(phnNum[0]); }
-			System.debug('phnnummmmmmm: ' + primaryPhone+'------' + phnNum);
+			phnTypeMap = new Map<String, String>();
+
+			for (Object p : phnNum) {
+				Map<String, Object> phnMap = (Map<String, Object>)p;
+				if (phnMap.get('type') != null && phnMap.get('value') != null) {
+					phnTypeMap.put(String.ValueOf(phnMap.get('type')) +' PHONE', String.ValueOf(phnMap.get('value')));
+				}
+			}
+
+			if (phnTypeMap.size() > 0) {
+				if (phnTypeMap.containsKey('HOME')) {
+					PrimaryPhone = phnTypeMap.get('HOME PHONE');
+				} else {
+					List<String> phnList = new List<String>(phnTypeMap.keyset());
+					PrimaryPhone = phnTypeMap.get(phnList[0]);
+				}
+			}
+
+			System.debug('phnnummmmmmm: ' + PrimaryPhone + '------' + phnNum);
 			RegistrationDate = String.valueOf(l.get('registration_date'));
 			if (l.get('married') != null) { IsMarried = Boolean.valueOf(l.get('married')); }
-			SpouseId = String.valueOf(l.get('spouse_id'));
+			if (l.get('spouse_id') != null) { SpouseId = String.valueOf(l.get('spouse_id')); }
 			ImmigrationStatus = String.valueOf(l.get('immigration_status'));
 			CountryofCitizenship = String.valueOf(l.get('country_of_citizenship'));
 			if (CountryofCitizenship != '' && CountryofCitizenship == 'USA') { CountryofCitizenship = 'US Citizen'; }
-			FicoScore = String.valueOf(l.get('fico_score'));
-			FicoScoreDate = String.valueOf(l.get('fico_score_date'));
+			if (l.get('fico_score') != null ) { FicoScore = String.valueOf(l.get('fico_score')); }
+			if (l.get('fico_score_date') != null ) { FicoScoreDate = String.valueOf(l.get('fico_score_date')); }
 			LastContactDate =  String.valueOf(l.get('last_contact_date'));
-			LastUpdatedDate =  String.valueOf(l.get('last_detail_update_date'));
-			Passphrase =  String.valueOf(l.get('passphrase'));
+			if (l.get('last_detail_update_date') != null ) { LastUpdatedDate =  String.valueOf(l.get('last_detail_update_date')); }
+			if (l.get('passphrase') != null ) { Passphrase =  String.valueOf(l.get('passphrase')); }
 			StateDeliveryMethod =  String.valueOf(l.get('statement_delivery_method'));
 			System.debug('the type is ' + l.get('type'));
 			List<Object> uu = (List<Object>)l.get('identification_documents');
@@ -362,27 +396,32 @@ global class SearchMemberResults {
 			List<Object> flagList = (List<Object>)l.get('flags');
 			Set<Object> flagSet = new Set<Object>(flagList);
 			System.debug('flagList =: ' + flagList);
+			System.debug('flagList.size() =: ' + flagList.size());
+			System.debug('flagSet =: ' + flagList);
 			flags = new List<String>();
 			isEmployee = '';
 
 			for (Integer i = 0; i < flagList.size(); i++) {
 				String s = String.ValueOf(flagList[i]);
+
 				if (flagset.contains('EXPL')) {
 					isEmployee = 'Member is expelled';
 				} else if (flagSet.contains('EMP')) {
 					isEmployee = 'Member is an employee';
 				}
 
+				System.debug('isEmployee in the loop with i ==== ' + i + ' &&&&& isEmployee ==== ' + isEmployee);
 				if (i < flagList.size() - 1) { s = s + ','; }
 				flags.add(s);
 			}
 
+			System.debug('isEmployee at the end of loop ::::: ' + isEmployee);
 			System.debug('flags::::::::: ' + flags);
 			Map<String, Object> o1 = (Map<String, Object>)l.get('primary_occupancy_address');
 			System.debug('primary_occupancy_address ' + o1);
 			List<String> tt = String.valueOf(o1.get('address_lines')).split(',');
 
-			for (String t1 : tt){
+			for (String t1 : tt) {
 				System.debug('address_lines ' + t1.replace('(', '').replace(')', ''));
 				StreetAddress = t1.replace('(', '').replace(')', '') + '\n';
 			}
@@ -417,7 +456,17 @@ global class SearchMemberResults {
 		}
 	}
 
-	global static String PreQualifiedCrossSell(String SSN, String LastName, String CustomerId) {
+	global static void PreQualifiedCrossSell() {
+		TF4SF__Customer__c cust = [SELECT Id, TF4SF__SSN__c, TF4SF__Last_Name__c FROM TF4SF__Customer__c WHERE Id = :custId];
+		offers(cust.TF4SF__SSN__c, cust.TF4SF__Last_Name__c, custId);
+	}
+
+	global static void offers(String SSN, String lastName, String cId) {
+		System.debug('entered offers');
+		string customerId = cId;
+		/*TF4SF__Customer__c cust = [SELECT Id, TF4SF__SSN__c, TF4SF__Last_Name__c FROM TF4SF__Customer__c WHERE Id = :custId];
+		String SSN = cust.TF4SF__SSN__c;
+		String lastName = cust.TF4SF__Last_Name__c;*/
 		System.debug('ssn is ' + SSN + ' & CustomerId');
 		Alpha_Pack__c alpha = Alpha_Pack__c.getOrgDefaults();
 		String url = '';
@@ -425,10 +474,10 @@ global class SearchMemberResults {
 
 		if (alpha.Enable_Production__c == true) {
 			url = alpha.Production_URL__c;
-			header = alpha.Production_Token__c;      
+			header = 'JWT ' + alpha.Production_Token__c;
 		} else {
 			url = alpha.Sandbox_URL__c;
-			header = alpha.Sandbox_Token__c;
+			header = 'JWT ' + alpha.Sandbox_Token__c;
 		}
 
 		String responseJson = '';
@@ -436,7 +485,7 @@ global class SearchMemberResults {
 		String body = '';
 		req.setTimeout(120 * 1000);  //120 seconds
 		//req.setEndpoint('callout:Ameris_Test_Named_Credential/AmerisIPService/tfapi/application');
-		url += 'api/cache/offers/?federalids=' + SSN + '&lastname=' + LastName;
+		url += 'api/cache/offers/?federalid=' + SSN + '&lastname=' + LastName;
 		//blob headerValue = blob.valueOf('Test'+':'+'Testvalue');
 		//String header = 'Token c1cb7333444e8a890882fd459c945692c9f4a47f'; //'BASIC '+ EncodingUtil.base64Encode(headerValue);
 		req.setEndpoint(url);
@@ -461,13 +510,18 @@ global class SearchMemberResults {
 		System.debug('Response: ' + responseJson);
 		//InsertDebugLog(appId, json, 'TIPIntegraion Request');
 		//InsertDebugLog(appId, responseJSON, 'TIPIntegraion Response');
-		List<TF4SF__Promotion__c> promotions = [SELECT Id, TF4SF__Customer__c, TF4SF__Sub_Product_Code__c, TF4SF__Url__c, TF4SF__keywords__c, TF4SF__Description__c, TF4SF__Template__c FROM TF4SF__Promotion__c WHERE TF4SF__Customer__c = :CustomerId]; 
+		List<TF4SF__Promotion__c> promotions = [SELECT Id, TF4SF__Customer__c, TF4SF__Sub_Product_Code__c, TF4SF__Url__c, TF4SF__keywords__c, TF4SF__Description__c, TF4SF__Template__c FROM TF4SF__Promotion__c WHERE TF4SF__Customer__c = :CustomerId];
+		Map<String, TF4SF__Promotion__c> promoMap = new Map<String, TF4SF__Promotion__c>();
+		for (TF4SF__Promotion__c p : promotions) { promoMap.put(p.TF4SF__Description__c, p); }
 		List<TF4SF__Promotion__c> newpromotions = new List<TF4SF__Promotion__c>(); 
 		List<TF4SF__Promotion__c> updatepromotions = new List<TF4SF__Promotion__c>(); 
 		List<Object> a = (List<Object>)JSON.deserializeUntyped(responseJson);
 		Map<String, Object> m = (Map<String, Object>)a[0];
 		System.debug('the response is ' + m.get('value'));
 		List<Object> k = (List<Object>)m.get('value');
+		List<TF4SF__Product_Codes__c> mcs = TF4SF__Product_Codes__c.getall().values();
+		Map<String, String> pcMap = new Map<String, String>();
+		for (TF4SF__Product_Codes__c pc : mcs) { pcMap.put(pc.ML_Code__c, pc.Name); }
 
 		for (Object u : k) {
 			Map<String, Object> l = (Map<String, Object>)u;
@@ -482,11 +536,13 @@ global class SearchMemberResults {
 			System.debug('the type is ' + l.get('type'));
 
 			if (promotions.size() > 0) {
-				for (TF4SF__Promotion__c promo : promotions) {
-					if (promo.TF4SF__Description__c == String.valueof(l.get('product_name')) && promo.TF4SF__Template__c == String.valueof(l.get('type'))) {
+				//for (TF4SF__Promotion__c promo : promotions) {
+					if (promoMap.containsKey(String.valueof(l.get('product_name'))) && promoMap.get(String.valueof(l.get('product_name'))).TF4SF__Template__c == String.valueof(l.get('type'))) {
+						TF4SF__Promotion__c promo = new TF4SF__Promotion__c();
+						promo.Id = promoMap.get(String.valueof(l.get('product_name'))).Id;
 						promo.TF4SF__Customer__c = CustomerId;
 						promo.TF4SF__Description__c = String.valueof(l.get('product_name'));
-						promo.TF4SF__Sub_Product_Code__c = String.valueof(l.get('product_type'));
+						promo.TF4SF__Sub_Product_Code__c = pcMap.get(String.valueof(l.get('product_type')));
 						promo.TF4SF__Url__c = 'https://keypointdev-developer-edition.na50.force.com/StartOffer?Code=' + promo.TF4SF__Sub_Product_Code__c;
 						promo.TF4SF__Template__c = String.valueOf(l.get('type'));
 						updatepromotions.add(promo);
@@ -494,17 +550,17 @@ global class SearchMemberResults {
 						TF4SF__Promotion__c pro = new TF4SF__Promotion__c();
 						pro.TF4SF__Customer__c = CustomerId;
 						pro.TF4SF__Description__c = String.valueof(l.get('product_name'));
-						pro.TF4SF__Sub_Product_Code__c = String.valueof(l.get('product_type'));
+						pro.TF4SF__Sub_Product_Code__c = pcMap.get(String.valueof(l.get('product_type')));
 						pro.TF4SF__Url__c = 'https://keypointdev-developer-edition.na50.force.com/StartOffer?Code=' + pro.TF4SF__Sub_Product_Code__c;
 						pro.TF4SF__Template__c = String.valueOf(l.get('type'));
 						newpromotions.add(pro);
 					}
-				}
+				//}
 			} else {
 				TF4SF__Promotion__c pr = new TF4SF__Promotion__c();
 				pr.TF4SF__Customer__c = CustomerId;
 				pr.TF4SF__Description__c = String.valueof(l.get('product_name'));
-				pr.TF4SF__Sub_Product_Code__c = String.valueof(l.get('product_type'));
+				pr.TF4SF__Sub_Product_Code__c = pcMap.get(String.valueof(l.get('product_type')));
 				pr.TF4SF__Url__c = 'https://keypointdev-developer-edition.na50.force.com/StartOffer?Code=' + pr.TF4SF__Sub_Product_Code__c;
 				pr.TF4SF__Template__c = String.valueOf(l.get('type'));
 				newpromotions.add(pr);
@@ -513,6 +569,6 @@ global class SearchMemberResults {
 
 		if (newpromotions.size() > 0) { insert newpromotions; }
 		if (updatepromotions.size() > 0) { update updatepromotions; }
-		return responseJson;
+		//return responseJson;
 	}
 }

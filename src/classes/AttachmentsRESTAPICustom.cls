@@ -2,7 +2,7 @@
 global with sharing class AttachmentsRESTAPICustom {
 
 	@HttpPost
-	global static Map<String , String>  attachDoc() {
+	global static Map<String, String>  attachDoc() {
 		System.debug('inside attachDoc');
 		RestRequest req = RestContext.request;
 		RestResponse res = Restcontext.response;
@@ -10,7 +10,8 @@ global with sharing class AttachmentsRESTAPICustom {
 		String parentId = req.params.get('parentId');  
 		String contentType = req.params.get('type');  
 		Blob postContent = req.requestBody; 
-		Map<String , String>  data = new Map<String , String>(); String attachmentId = req.params.get('attachmentId');  
+		Map<String, String>  data = new Map<String, String>();
+		String attachmentId = req.params.get('attachmentId');
 		//res.addHeader('Access-Control-Allow-Origin', Service_Configuration__c.getOrgDefaults().Siteurl__c);
 		//res.addHeader('Content-Type', 'application/json');
 
@@ -131,7 +132,7 @@ global with sharing class AttachmentsRESTAPICustom {
 			System.debug('the Errors is ' + Errors);
 			String IsValid = String.valueOf(q.get('IsValid'));
 			System.debug('the IsValid is ' + IsValid);
-		
+
 			data.put('Application__c.First_Name__c', FirstName);
 			data.put('Application__c.Last_Name__c', LastName);
 			data.put('Application__c.Street_Address_1__c', Address1);
@@ -160,7 +161,7 @@ global with sharing class AttachmentsRESTAPICustom {
 			att.Body = postContent;
 			att.Name = fName;
 			if (contentType != null && Schema.sObjectType.Attachment.fields.ContentType.isCreateable()) { att.ContentType = contentType; }
-			if (Attachment.SObjectType.getDescribe().isUpdateable() && Attachment.SObjectType.getDescribe().isCreateable()) { upsert att;  }
+			if (Attachment.SObjectType.getDescribe().isUpdateable() && Attachment.SObjectType.getDescribe().isCreateable()) { upsert att; }
 		}
 
 		res.responseBody = Blob.valueof('worked');

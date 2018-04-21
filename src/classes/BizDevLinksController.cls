@@ -5,26 +5,33 @@ global class BizDevLinksController {
 	global String ipaddress{get;set;}
 	global String userAgent{get;set;}
 	global Set<String> prdNameSet{get; set;}
+	global List<String> prdNameList{get; set;}
 	global User loggedInUser{get;set;}
 	global String PromoCode;
 	public String loggedInUserId;
+	public List<String> productLists {get; set;}
 
 	global BizDevLinksController() {
 		loggedInUserId = Userinfo.getUserId();
 		ipaddress = ApexPages.currentPage().getHeaders().get('X-Salesforce-SIP');
 		userAgent = ApexPages.currentPage().getHeaders().get('USER-AGENT');
 		prdMap = new Map<String, List<TF4SF__Product_Codes__c>>();
-		productlist = TF4SF__Product_Codes__c.getAll().values();
 		PromoCode = ApexPages.currentPage().getParameters().get('PromoCode');
 		prdNameSet = new Set<String>();
-		for (TF4SF__Product_Codes__c pcname : productlist){  if (String.isNotBlank(pcname.TF4SF__Product__c)) { prdNameSet.add(pcname.TF4SF__Product__c); } }
+		prdNameList = new List<String>(); 
+		//productlist = TF4SF__Product_Codes__c.getAll().values();
+		productlist = [SELECT Id, IsDeleted, Name, SetupOwnerId, CreatedDate, CreatedById, LastModifiedDate, LastModifiedById, SystemModstamp, TF4SF__Amount_error_message__c, TF4SF__Description__c, TF4SF__Product_Code__c, TF4SF__Product_Theme__c, TF4SF__Product__c, TF4SF__Sub_Product_Code__c, TF4SF__Sub_Product__c, ML_Code__c, Landing_Page_Description__c, Product_Image__c, TF4SF__Description_TextArea1__c, TF4SF__Description_TextArea2__c, TF4SF__Description_TextArea3__c, TF4SF__Description_TextArea4__c, TF4SF__Description_TextArea5__c, TF4SF__Description_Text__c, Order__c, Product_Order__c FROM TF4SF__Product_Codes__c ORDER BY Order__c ASC ];
+		productLists = new List<String>();
 
-		for (String prdName : prdNameSet) {
+		for (TF4SF__Product_Codes__c pcname : productlist) { if (prdNameSet.add(pcname.TF4SF__Product__c)) { prdNameList.add(pcname.TF4SF__Product__c); } }
+		for (String prdName : prdNameList) {
 			List<TF4SF__Product_Codes__c> pcList = new List<TF4SF__Product_Codes__c>();
-			pcList = [SELECT Id, Name, TF4SF__Product__c, TF4SF__Sub_Product__c,Product_Image__c,Landing_Page_Description__c FROM TF4SF__Product_Codes__c WHERE TF4SF__Product__c = :prdName ORDER BY Name ASC];
+			pcList = [SELECT Id, Name, TF4SF__Product__c, TF4SF__Sub_Product__c, TF4SF__Description__c, Product_Image__c, Product_Order__c, Landing_Page_Description__c, Order__c FROM TF4SF__Product_Codes__c WHERE TF4SF__Product__c = :prdName ORDER BY Order__c ASC];
 			prdMap.put(prdName, pcList);
 			System.debug('the map is : ' + pcList.size());
 		}
+
+		if (prdMap.size() > 0) { for (String p : prdMap.KeySet()) { if (p != '' || p != null) { productLists.add(p); } } }
 	}
 
 	global PageReference ProdSub() {
@@ -33,6 +40,7 @@ global class BizDevLinksController {
 		TF4SF__Application__c app = new TF4SF__Application__c();
 		app.TF4SF__Sub_Product__c = pCodes.get(SelectedProduct).TF4SF__Sub_Product__c;
 		app.TF4SF__Product__c = pCodes.get(SelectedProduct).TF4SF__Product__c;
+		if (pCodes.get(SelectedProduct).TF4SF__Description__c != null) { app.TF4SF__Sub_Product_Description__c = pCodes.get(SelectedProduct).TF4SF__Description__c; }
 		app.TF4SF__Created_Channel__c = 'BizDev';
 		app.TF4SF__Current_Channel__c = 'BizDev';
 		app.TF4SF__Application_Status__c = 'Open';
@@ -48,7 +56,7 @@ global class BizDevLinksController {
 		if (ipaddress != null) { app.TF4SF__IP_Address__c = ipaddress; }
 		if (userAgent != null) { app.TF4SF__User_Agent__c = userAgent; }
 
-		TF4SF__Product_Codes__c pc = [SELECT Id, Name, TF4SF__Product__c, TF4SF__Sub_Product__c FROM TF4SF__Product_Codes__c WHERE Name = :SelectedProduct LIMIT 1];
+		TF4SF__Product_Codes__c pc = [SELECT Id, Name, TF4SF__Product__c, TF4SF__Sub_Product__c, TF4SF__Description__c FROM TF4SF__Product_Codes__c WHERE Name = :SelectedProduct LIMIT 1];
 
 		if (pc.TF4SF__Product__c == 'Checking') {
 			app.TF4SF__Type_of_Checking__c = pc.TF4SF__Sub_Product__c;
@@ -63,8 +71,7 @@ global class BizDevLinksController {
 		} else if (pc.TF4SF__Product__c == 'Credit Cards') {
 			app.TF4SF__Type_of_Credit_Cards__c = pc.TF4SF__Sub_Product__c;
 		}
-		   
-		   
+
 		CryptoHelper.setAppToken(app);
 		insert app;
 
@@ -85,7 +92,7 @@ global class BizDevLinksController {
 		abt.TF4SF__Application__c = app.Id;
 		insert abt;
 
-		PageReference p = new PageReference(TF4SF__SiteUrl__c.getOrgDefaults().TF4SF__Url__c + 'tf4sf__dsp#/eligibility'); 
+		PageReference p = new PageReference(TF4SF__SiteUrl__c.getOrgDefaults().TF4SF__Url__c + 'tf4sf__dsp#/eligibility');
 		Cookie id = ApexPages.currentPage().getCookies().get('id');
 		Cookie ut = ApexPages.currentPage().getCookies().get('ut');
 		Cookie fr = ApexPages.currentPage().getCookies().get('fr');

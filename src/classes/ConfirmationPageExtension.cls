@@ -3,12 +3,16 @@ global class ConfirmationPageExtension implements TF4SF.DSP_Interface {
 	public String nameSpace { get; set; }
 
 	global Map<String, String> main(Map<String, String> tdata) {
+		Long time1 = DateTime.now().getTime();
+		Boolean infoDebug = false;
 		Map<String, String> data = new Map<String, String>();
 
 		try {
 			String appId = tdata.get('id');
+			infoDebug = (tdata.get('infoDebug') == 'true');
 			TF4SF__Application__c app = [SELECT Id, Name, ProductId__c, TF4SF__Last_Name__c, TF4SF__Sub_Product__c, TF4SF__Primary_Product_Status__c FROM TF4SF__Application__c WHERE Id = :appId];
 			TF4SF__Identity_Information__c iden = [SELECT Id, Name, TF4SF__SSN_Prime__c FROM TF4SF__Identity_Information__c WHERE TF4SF__Application__c = :appId];
+			System.debug('primary product status: '+app.TF4SF__Primary_Product_Status__c);
 			String newAppId;
 			String method = tdata.get('method');
 			//String ProductId = '863c298d-a27d-4b2f-bb37-e0bd66cd2cfe'; //data.get('productId');
@@ -27,7 +31,12 @@ global class ConfirmationPageExtension implements TF4SF.DSP_Interface {
 				}
 
 				//if (preQualifiedresponse != null) { data.put('preQualifiedCrossSell', preQualifiedresponse); }
-				if (postCrossSellResponse != null) { data.put('postCrossSell', postCrossSellResponse); }
+				if (postCrossSellResponse != null) {
+					data.put('postCrossSell', postCrossSellResponse);
+				} else {
+					data.put('postCrossSell', '');
+					ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.INFO, 'ConfirmationPageExtension - postCrossSellResponse is null!'));
+				}
 			} else {
 				if (appId != null) {
 					Boolean preQualifiedOffer1 = (tdata.get('PreQualifiedOffer1') == 'true');
@@ -66,11 +75,14 @@ global class ConfirmationPageExtension implements TF4SF.DSP_Interface {
 
 					if (products != null && products.size() > 0) {
 						data.put('debug-server-errors', 'ConfirmationPageExtension - before cloneApp: crossQualifiedOffer1: ' + crossQualifiedOffer1 + '; crossQualifiedValue1: ' + crossQualifiedValue1);
+						ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.INFO, 'ConfirmationPageExtension - before cloneApp: crossQualifiedOffer1: ' +  crossQualifiedOffer1 + '; crossQualifiedValue1: ' + crossQualifiedValue1));
+
 						try {
 							newAppId = cloneApp(appId, products);
 							data.put('newAppId', newAppId);
 						} catch (Exception e) {
-							data.put('server-errors', 'Error encountered in cloneApp: ' + e.getMessage());
+							data.put('server-errors', 'Error encountered in ConfirmationPageExtension class - cloneApp: ' + e.getMessage() + '; line: ' + e.getLineNumber() + '; type: ' + e.getTypeName() + '; stack trace: ' + e.getStackTraceString());
+							ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR, 'Error encountered in ConfirmationPageExtension class - cloneApp: ' + e.getMessage() + '; line: ' + e.getLineNumber() + '; type: ' + e.getTypeName() + '; stack trace: ' + e.getStackTraceString()));
 						}
 
 						setAppErrors(data);
@@ -85,9 +97,14 @@ global class ConfirmationPageExtension implements TF4SF.DSP_Interface {
 				//System.debug('the PreCrossSell response is '+JsonResponsePre);
 			}
 		} catch (Exception e) {
-			data.put('server-errors', 'Error encountered in ConfirmationPageExtension class: ' + e.getMessage());
+			data.put('server-errors', 'Error encountered in ConfirmationPageExtension class: ' + e.getMessage() + '; line: ' + e.getLineNumber() + '; type: ' + e.getTypeName() + '; stack trace: ' + e.getStackTraceString());
+			ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR, 'Error encountered in ConfirmationPageExtension class: ' + e.getMessage() + '; line: ' + e.getLineNumber() + '; type: ' + e.getTypeName() + '; stack trace: ' + e.getStackTraceString()));
 			System.debug('server-errors: ' + e.getMessage());
 		}
+
+		Long time2 = DateTime.now().getTime();
+		if (infoDebug == true ) { data.put('debug-server-errors', 'ConfirmationPageExtension - Elapsed Call Time: ' + (time2 - time1) + 'ms'); }
+		ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.INFO, 'ConfirmationPageExtension - Elapsed Call Time: ' + (time2 - time1) + 'ms'));
 
 		return data;
 	}
@@ -104,7 +121,7 @@ global class ConfirmationPageExtension implements TF4SF.DSP_Interface {
 			obj = database.query(query);
 		} catch (Exception e) {
 			ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.WARNING, e.getMessage() + '; ' + e.getLineNumber()));      
-			ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.WARNING, 'Stack Trace: setData() line 160:' + e.getStackTraceString()));      
+			ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.WARNING, 'Stack Trace: getObjectFields() line 112:' + e.getStackTraceString()));      
 		}
 		
 		return obj;

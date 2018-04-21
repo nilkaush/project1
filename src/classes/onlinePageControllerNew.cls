@@ -36,7 +36,7 @@ global with sharing class onlinePageControllerNew {
 		System.debug('=====startApplicationId====: ' + startApplicationId);
 		if (startApplicationId != null && startApplicationId != '') { boolValStartApp = boolean.valueOf(startApplicationId); }
 		System.debug('=====boolValStartApp====: ' + boolValStartApp);
-		
+
 		String userId = UserInfo.getUserId();
 		loggedInUser = [SELECT Id, TF4SF__Channel__c, Name, Email, TF4SF__Location__c, Profile.Name FROM User WHERE Id = :userId];
 		ipaddress = ApexPages.currentPage().getHeaders().get('X-Salesforce-SIP');
@@ -94,7 +94,7 @@ global with sharing class onlinePageControllerNew {
 	}
 
 	@HttpPost
-	global static String generateApp(){
+	global static String generateApp() {
 		TF4SF__Application__c app = new TF4SF__Application__c ();
 		TF4SF__Application2__c app2 = new TF4SF__Application2__c ();
 		TF4SF__Employment_Information__c emp = new TF4SF__Employment_Information__c();
@@ -126,8 +126,9 @@ global with sharing class onlinePageControllerNew {
 
 				if (applicationPrefildata.customersID != null) {
 					app.TF4SF__Customer__c = applicationPrefildata.customersID;
-					//try{Qualified_CrossSell__c qcr = [SELECT Id, Messages__c, Customer__c FROM Qualified_CrossSell__c WHERE Customer__c =: applicationPrefildata.customersID LIMIT 1];
-					//app.TF4SF__CL_Product_Comments_Only__c = qcr.Messages__c;}catch(Exception e){System.debug('error while fetching the member crossSell');}
+					app.TF4SF__Is_Member__c = true;
+					//try {Qualified_CrossSell__c qcr = [SELECT Id, Messages__c, Customer__c FROM Qualified_CrossSell__c WHERE Customer__c =: applicationPrefildata.customersID LIMIT 1];
+					//app.TF4SF__CL_Product_Comments_Only__c = qcr.Messages__c;}catch(Exception e) {System.debug('error while fetching the member crossSell');}
 				}
 
 				if (applicationPrefildata.memberNo != null) { app.TF4SF__Person_Number__c = applicationPrefildata.memberNo; }
@@ -253,7 +254,7 @@ global with sharing class onlinePageControllerNew {
 		global String idType;
 	}
 
-	public PageReference ProSub(){
+	public PageReference ProSub() {
 		System.debug(ApexPages.currentPage().getParameters());
 		System.debug('The application id is ##########' + appId);
 		PageReference p = null;
@@ -270,7 +271,7 @@ global with sharing class onlinePageControllerNew {
 		List<TF4SF__Product_Codes__c> productCodeList = [SELECT Id, Name, TF4SF__Product__c, TF4SF__Sub_Product__c FROM TF4SF__Product_Codes__c WHERE Name = :ApexPages.currentPage().getParameters().get('subProductId') ORDER BY TF4SF__Sub_Product__c ASC];
 		
 		if (productCodeList != null && !productCodeList.isEmpty()) {
-			for (TF4SF__Product_Codes__c key : productCodeList){
+			for (TF4SF__Product_Codes__c key : productCodeList) {
 				app.TF4SF__Product__c = key.TF4SF__Product__c;
 				app.TF4SF__Sub_Product__c = key.TF4SF__Sub_Product__c;
 				app.TF4SF__Type_of_Checking__c = key.TF4SF__Sub_Product__c;
@@ -281,19 +282,19 @@ global with sharing class onlinePageControllerNew {
 		//app.TF4SF__Product__c = 'Checking';
 		//app.TF4SF__Sub_Product__c = 'Checking - Colossal Checking';
 		//app.TF4SF__Type_of_Checking__c = 'Checking - Colossal Checking';
-		/*if(app.TF4SF__Product__c != null && app.TF4SF__Product__c != '' && app.TF4SF__Product__c.equalsIgnoreCase('Checking')){
+		/*if (app.TF4SF__Product__c != null && app.TF4SF__Product__c != '' && app.TF4SF__Product__c.equalsIgnoreCase('Checking')) {
 			app.TF4SF__Product__c = 'Checking';
-			if(app.TF4SF__Sub_Product__c.equalsIgnoreCase('Checking - Colossal Checking')){
+			if (app.TF4SF__Sub_Product__c.equalsIgnoreCase('Checking - Colossal Checking')) {
 				
 				app.TF4SF__Sub_Product__c = 'Checking - Colossal Checking';
 				app.TF4SF__Type_of_Checking__c = 'Checking - Colossal Checking';
 		   
-			}else if(app.TF4SF__Sub_Product__c.equalsIgnoreCase('Checking - Classic Checking')){
+			}else if (app.TF4SF__Sub_Product__c.equalsIgnoreCase('Checking - Classic Checking')) {
 				
 				app.TF4SF__Sub_Product__c = 'Checking - Classic Checking';
 				app.TF4SF__Type_of_Checking__c = 'Checking - Classic Checking';
 			
-			}else if(app.TF4SF__Sub_Product__c.equalsIgnoreCase('Checking - Premier Checking')){
+			}else if (app.TF4SF__Sub_Product__c.equalsIgnoreCase('Checking - Premier Checking')) {
 					
 				app.TF4SF__Sub_Product__c = 'Checking - Premier Checking';
 				app.TF4SF__Type_of_Checking__c = 'Checking - Premier Checking';   
@@ -306,31 +307,31 @@ global with sharing class onlinePageControllerNew {
 			
 
 			
-	   } else if(app.TF4SF__Product__c != null && app.TF4SF__Product__c != '' && app.TF4SF__Product__c.equalsIgnoreCase('Savings')){
+	   } else if (app.TF4SF__Product__c != null && app.TF4SF__Product__c != '' && app.TF4SF__Product__c.equalsIgnoreCase('Savings')) {
 			
 			app.TF4SF__Product__c = 'Savings';
 			
-			if(app.TF4SF__Sub_Product__c.equalsIgnoreCase('Savings - Basic Savings')){
+			if (app.TF4SF__Sub_Product__c.equalsIgnoreCase('Savings - Basic Savings')) {
 				
 				app.TF4SF__Sub_Product__c = 'Savings - Basic Savings';
 				app.TF4SF__Type_of_Savings__c = 'Savings - Basic Savings';
 		   
-			}else if(app.TF4SF__Sub_Product__c.equalsIgnoreCase('Savings - Holiday Club Savings')){
+			}else if (app.TF4SF__Sub_Product__c.equalsIgnoreCase('Savings - Holiday Club Savings')) {
 				
 				app.TF4SF__Sub_Product__c = 'Savings - Holiday Club Savings';
 				app.TF4SF__Type_of_Savings__c = 'Savings - Holiday Club Savings';
 			
-			}else if(app.TF4SF__Sub_Product__c.equalsIgnoreCase('Savings - Money Market Account')){
+			}else if (app.TF4SF__Sub_Product__c.equalsIgnoreCase('Savings - Money Market Account')) {
 					
 				app.TF4SF__Sub_Product__c = 'Savings - Money Market Account';
 				app.TF4SF__Type_of_Savings__c = 'Savings - Money Market Account'; 
 			
-			}else if(app.TF4SF__Sub_Product__c.equalsIgnoreCase('Savings - Primary Savings')){
+			}else if (app.TF4SF__Sub_Product__c.equalsIgnoreCase('Savings - Primary Savings')) {
 					
 				app.TF4SF__Sub_Product__c = 'Savings - Primary Savings';
 				app.TF4SF__Type_of_Savings__c = 'Savings - Primary Savings';  
 			
-			}else if(app.TF4SF__Sub_Product__c.equalsIgnoreCase('Savings - Super5 Savings')){
+			}else if (app.TF4SF__Sub_Product__c.equalsIgnoreCase('Savings - Super5 Savings')) {
 					
 				app.TF4SF__Sub_Product__c = 'Savings - Super5 Savings';
 				app.TF4SF__Type_of_Savings__c = 'Savings - Super5 Savings';   
@@ -364,7 +365,7 @@ global with sharing class onlinePageControllerNew {
 
 		return p;
 	}
-	
+
 	//Checking
 	public PageReference CheckingColossalChecking() {
 		app.TF4SF__Product__c = 'Checking';

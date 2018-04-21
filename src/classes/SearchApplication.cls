@@ -27,7 +27,7 @@ public with sharing class SearchApplication {
 		//List< document > documentList = [SELECT Name FROM Document WHERE Name = 'AmerisLogo'];
 		maxSearchResults = 100;
 		recordsPerPage = 25;
-		//if(documentList.size() > 0) { imageURL=imageURL+documentList[0].id; }
+		//if (documentList.size() > 0) { imageURL=imageURL+documentList[0].id; }
 	}
 
 	// Method executed when "Search" button om the SearchMember page is clicked
@@ -56,7 +56,7 @@ public with sharing class SearchApplication {
 			System.debug('the App Number is ' + ApplicationQuery);
 			System.debug('the fromDate ' + FromDate);
 			System.debug('the ToDate ' + ToDate);
-			
+
 			Date fromDay = Date.parse(FromDate);
 			Date toDay = Date.parse(ToDate);
 			//datetime fromDay = datetime.newInstance(date.parse(FromDate).year(), date.parse(FromDate).month(),date.parse(FromDate).day());
@@ -206,7 +206,7 @@ public with sharing class SearchApplication {
 			System.debug('An error was encountered in the Execute method under SearchMember class ' + e);
 		} 
 	}
-	
+
 	public List<TF4SF__Application__c> getApplicationDetails() {
 		return applications;
 	}
@@ -219,7 +219,7 @@ public with sharing class SearchApplication {
 			return null;
 		}
 	}
-	
+
 	public List<ApplicationWrapper> getappWrapperList() {
 		appWrapper = new List<ApplicationWrapper>();
 		//List<TF4SF__Application__c> appList = new List<TF4SF__Application__c>();
@@ -265,18 +265,21 @@ public with sharing class SearchApplication {
 		public TF4SF__Application__c app {get; set;}
 		public String createdDateTimePST { get; set;}
 		public String submittedDateTimePST { get; set;}
-		
+
 		public ApplicationWrapper(TF4SF__Application__c a, String productName, String decision, Integer c) {
 			this.count = c;
 			this.productName = productName;
 			this.decision = decision;
 			this.app = a;
 			createdDateTimePST  = '';
-			if(a.TF4SF__Created_Timestamp__c != null)
-			createdDateTimePST  = a.TF4SF__Created_Timestamp__c.format('yyyy-MM-dd HH:mm:ss', 'PST') +' PST';
+			if (a.TF4SF__Created_Timestamp__c != null) {
+				createdDateTimePST  = a.TF4SF__Created_Timestamp__c.format('yyyy-MM-dd HH:mm:ss', 'PST') +' PST';
+			}
+
 			submittedDateTimePST = '';
-			if(a.TF4SF__Submitted_Timestamp__c != null) 
-			submittedDateTimePST =  a.TF4SF__Submitted_Timestamp__c.format('yyyy-MM-dd HH:mm:ss', 'PST') +' PST';
+			if (a.TF4SF__Submitted_Timestamp__c != null) {
+				submittedDateTimePST =  a.TF4SF__Submitted_Timestamp__c.format('yyyy-MM-dd HH:mm:ss', 'PST') +' PST';
+			}
 		}
 	}
 
@@ -312,7 +315,7 @@ public with sharing class SearchApplication {
 		}
 	}
 
-	public Integer getappPageNumber(){
+	public Integer getappPageNumber() {
 		if (assc != null) {
 			return assc.getPageNumber();
 		} else {
@@ -320,7 +323,7 @@ public with sharing class SearchApplication {
 		}
 	}
 
-	public Integer getappTotalPages(){
+	public Integer getappTotalPages() {
 		if (assc != null) {
 			Decimal apptotalSize = assc.getResultSize();
 			Decimal apppageSize = assc.getPageSize();

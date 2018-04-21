@@ -4,7 +4,7 @@ global with sharing class OfflinePageContr1 {
 	public List<TF4SF__Product_Codes__c> productlist {get; set;}
 	public Set<String> prdNameSet{get; set;}
 	public Map<String,List<TF4SF__Product_Codes__c>> prdMap{get; set;}
-	public User loggedInUser{get; set;}   
+	public User loggedInUser{get; set;}
 	public String xmlString;
 	public transient Dom.Document xmlData;
 	public Dom.XMLNode address;
@@ -28,7 +28,7 @@ global with sharing class OfflinePageContr1 {
 		userAgent = ApexPages.currentPage().getHeaders().get('USER-AGENT');
 		if (appId != null) {
 			app = [SELECT Id, TF4SF__Created_Channel__c, TF4SF__Current_Channel__c, TF4SF__Created_timestamp__c, TF4SF__Created_Branch_Name__c, TF4SF__Created_User_Email_Address__c, TF4SF__Created_Person__c, TF4SF__Current_timestamp__c, TF4SF__Current_Branch_Name__c, TF4SF__Current_Person__c, TF4SF__Application_Page__c, TF4SF__Product__c, TF4SF__Sub_Product__c, TF4SF__Type_of_Checking__c, TF4SF__Type_Of_Business_CDs__c, TF4SF__Type_Of_Business_Credit_Cards__c, TF4SF__Type_Of_Business_Checking__c, TF4SF__Type_Of_Business_Loans__c, TF4SF__Type_Of_Business_Savings__c, TF4SF__Type_of_Certificates__c, TF4SF__Type_of_Credit_Cards__c, TF4SF__Type_Of_Home_Equity__c, TF4SF__Type_of_Investments__c, TF4SF__Type_of_Mortgage_Loan__c, TF4SF__Type_of_Mortgage_Short_Application__c, TF4SF__Type_of_Personal_Loans__c, TF4SF__Type_of_Savings__c, TF4SF__Type_of_Vehicle_Loans__c FROM TF4SF__Application__c WHERE Id = :appId];
-		} 
+		}
 
 		//Fetching the XML code
 		/*this.xmlString = ApexPages.currentPage().getParameters().get('xmldata');
@@ -132,15 +132,15 @@ global with sharing class OfflinePageContr1 {
 
 				// Inserting Application and other child records
 				if (TF4SF__Application__c.SObjectType.getDescribe().isCreateable()) { insert app; }
-				app2.TF4SF__Application__c= app.Id;
-				emp.TF4SF__Application__c= app.Id;
-				iden.TF4SF__Application__c= app.Id;
-				acc.TF4SF__Application__c= app.Id;
+				app2.TF4SF__Application__c = app.Id;
+				emp.TF4SF__Application__c = app.Id;
+				iden.TF4SF__Application__c = app.Id;
+				acc.TF4SF__Application__c = app.Id;
 
 				appact.TF4SF__Name__c = app.OwnerId;
 				appact.TF4SF__Branch__c = app.TF4SF__Created_Branch_Name__c;
-				appact.TF4SF__Channel__c = app.TF4SF__Created_Channel__c; 
-				appact.TF4SF__Application__c= app.Id;
+				appact.TF4SF__Channel__c = app.TF4SF__Created_Channel__c;
+				appact.TF4SF__Application__c = app.Id;
 				appact.TF4SF__Action__c = 'Created the Application';
 				appact.TF4SF__Activity_Time__c = System.now();
 
@@ -150,10 +150,10 @@ global with sharing class OfflinePageContr1 {
 				if (TF4SF__About_Account__c.SObjectType.getDescribe().isCreateable()) { insert acc; }
 				if (TF4SF__Application_Activity__c.SObjectType.getDescribe().isCreateable()) { insert appact; }
 				appRecId = app.Id;
-				//Logger.addMessage('Obtained XML with data in it', System.now().format());   
+				//Logger.addMessage('Obtained XML with data in it', System.now().format());
 			}
 		} catch (Exception e) {
-		   System.debug('Error in the generateApp method in the OfflinePage class ' + e + ' and the line number is ' + e.getLineNumber()); 
+			System.debug('Error in the generateApp method in the OfflinePage class ' + e + ' and the line number is ' + e.getLineNumber());
 		}
 
 		return appRecId;
@@ -199,14 +199,14 @@ global with sharing class OfflinePageContr1 {
 		app.TF4SF__Sub_Product__c = 'Checking - Colossal Checking';
 		app.TF4SF__Application_Page__c = 'CrossSellPage';
 		app.TF4SF__Number_of_Products__c = 1;
-		
+
 		if (ipaddress != null) { app.TF4SF__IP_Address__c =  ipaddress; }
 		if (userAgent != null) { app.TF4SF__User_Agent__c =  userAgent; }
 		//if (TF4SF__Application__c.SObjectType.getDescribe().isCreateable() && appId == null) {
 		//    insert app;
 		// } else 
 		if (TF4SF__Application__c.SObjectType.getDescribe().isUpdateable() && appId != null) { update app; }
-		
+
 		System.debug('########################## application ID' + app.id);
 		//Logger.addMessage('Redirecting to INDEX page', System.now().format());
 		p = new PageReference(TF4SF__SiteUrl__c.getOrgDefaults().TF4SF__Url__c + 'tf4sf__dsp#/eligibility');

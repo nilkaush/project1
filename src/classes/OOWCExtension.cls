@@ -1,6 +1,8 @@
 //Extension class for update the OOW
 global class OOWCExtension implements TF4SF.DSP_Interface {
 	global Map<String, String> main(Map<String, String> tdata) {
+		Long time1 = DateTime.now().getTime();
+		Boolean infoDebug = (tdata.get('infoDebug') == 'true');
 		Map<String, String> data = tdata.clone();
 		List<KYC_OOW__c> oowList = new List<KYC_OOW__c>();
 		String appId = data.get('id');
@@ -16,6 +18,8 @@ global class OOWCExtension implements TF4SF.DSP_Interface {
 			update oowList;
 		}
 
+		Long time2 = DateTime.now().getTime();
+		if (infoDebug == true ) { data.put('debug-server-errors', 'OOWCExtension - Elapsed Call Time: ' + (time2 - time1) + 'ms'); }
 		return data;
 	}
 }

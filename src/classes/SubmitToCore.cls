@@ -45,6 +45,11 @@ global class SubmitToCore {
 				immStatusMap.put(immType.MasterLabel, immType.Code__c);
 			}
 
+			Map<String, String> idenDocMap = new Map<String, String>();
+			for (Identification_Document__mdt idenDoc : [SELECT MasterLabel, Doc_Code__c FROM Identification_Document__mdt]) {
+				idenDocMap.put(idenDoc.MasterLabel, idenDoc.Doc_Code__c);
+			}
+
 			System.debug('apptypemap: '+appTypeMap);
 			Map<String,String> prodMap = new Map<String,String>();
 			if (String.isNotBlank(app.ProductId__c)) { prodMap.put(app.TF4SF__Sub_Product__c,app.ProductId__c); }
@@ -59,7 +64,7 @@ global class SubmitToCore {
 
 			SubmitToCoreHelper stch = new SubmitToCoreHelper();
 
-			template = stch.buildJSONRequest(data, prodMap, empMap, occStatusMap, immStatusMap, appTypeMap, app, iden, abtAcc, empInfo, kycInfo);
+			template = stch.buildJSONRequest(data, prodMap, empMap, occStatusMap, immStatusMap, appTypeMap, idenDocMap, app, iden, abtAcc, empInfo, kycInfo);
 			System.debug('template after fetching from SubmitToCoreHelper class ::::' + template);
 
 			if (app.ProductId__c != null && app.ProductId__c != '' && String.isNotBlank(template)) {

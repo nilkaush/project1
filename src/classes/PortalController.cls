@@ -162,7 +162,8 @@ global without sharing class PortalController {
 				}
 
 				System.debug('appIdList: ' + appIdList);
-				appMap = new Map<Id, TF4SF__Application__c>([SELECT Id, Name, TF4SF__Sub_Product__c, Meridian_Link_Number__c, TF4SF__Primary_Offer__c, App_Number__c,
+				appMap = new Map<Id, TF4SF__Application__c>([SELECT Id, Name, TF4SF__Sub_Product__c, Meridian_Link_Number_CS1__c, Meridian_Link_Number_CS2__c,
+												 Meridian_Link_Number_CS3__c, Meridian_Link_Number__c, TF4SF__Primary_Offer__c, App_Number__c,
 												 TF4SF__Primary_Offer_Status__c, TF4SF__Second_Offer__c, TF4SF__Second_Offer_Status__c, 
 												 TF4SF__Third_Offer__c, TF4SF__Third_Offer_Status__c, TF4SF__Email_Address__c, TF4SF__Last_Name__c, 
 												 TF4SF__Full_Name_PA__c, TF4SF__FullName_J__c, TF4SF__FullName_J2__c, TF4SF__Support_Phone_Number__c,
@@ -173,7 +174,7 @@ global without sharing class PortalController {
 												 LastModifiedDate FROM TF4SF__Application__c 
 												 //TF4SF__Application_Status__c IN ('Save for Later', 'Abandoned' ) LIMIT :maxSearchResults]);
 												 
-												 WHERE (TF4SF__Last_Name__c = :lastName AND TF4SF__Email_Address__c = :email AND Id IN :appIdList)                                                   
+												 WHERE (TF4SF__Last_Name__c = :lastName AND TF4SF__Email_Address__c = :email AND Id IN :appIdList)
 												 //WHERE (TF4SF__Last_Name__c = :lastName AND Id IN :appIdList)
 												 AND TF4SF__Application_Status__c IN ('Submitted', 'Abandoned', 'Save for Later') 
 												 ORDER by LastModifiedDate LIMIT :maxSearchResults]);
@@ -184,6 +185,7 @@ global without sharing class PortalController {
 			if (appMap == null || appMap.size() == 0) {
 				System.debug('entered appmap');
 				String appIdStr = '';
+
 				for (String appId : appIdList) {
 					if (String.isNotBlank(appIdStr)) { appIdStr += ', '; }
 					appIdStr += '\'' + appId + '\'';
@@ -210,7 +212,7 @@ global without sharing class PortalController {
 		Map<String, List<Attachment>> dAttmap = null;
 
 		if (appMap != null && appMap.keySet().size() > 0) {
-			Map<Id, TF4SF__Products__c> ProdMap = new Map<Id, TF4SF__Products__c>([SELECT Id, Name, TF4SF__Account_Holder_Name__c, TF4SF__Account_Number__c, TF4SF__Account_Type__c, TF4SF__Application__c, TF4SF__Product_Name__c, TF4SF__Product_Type__c, TF4SF__Requested_Credit_Limit__c, TF4SF__Requested_Loan_Amount__c, TF4SF__Funding_Amount_External__c, TF4SF__Term__c, TF4SF__Rate__c
+			Map<Id, TF4SF__Products__c> ProdMap = new Map<Id, TF4SF__Products__c>([SELECT Id, Name, Requested_Term__c, TF4SF__Account_Holder_Name__c, TF4SF__Account_Number__c, TF4SF__Account_Type__c, TF4SF__Application__c, TF4SF__Product_Name__c, TF4SF__Product_Type__c, TF4SF__Requested_Credit_Limit__c, TF4SF__Requested_Loan_Amount__c, TF4SF__Funding_Amount_External__c, TF4SF__Term__c, TF4SF__Rate__c
 																	FROM TF4SF__Products__c WHERE TF4SF__Application__c IN :appMap.keySet() LIMIT :maxSearchResults]);
 
 			Map<Id, TF4SF__Documentation_Request__c> DReq = new Map<Id, TF4SF__Documentation_Request__c>([SELECT Id, Name, TF4SF__Application__c, TF4SF__Description__c, 
@@ -240,7 +242,7 @@ global without sharing class PortalController {
 					}
 				}
 			}
-				
+
 			for (TF4SF__Products__c apro : ProdMap.values()) {
 				if (aProd.containsKey(apro.TF4SF__Application__c)) {
 					aProd.get(apro.TF4SF__Application__c).add(apro);
@@ -251,7 +253,7 @@ global without sharing class PortalController {
 					}
 				}
 			}
-				
+
 			for (Note pn : prodNotes.values()) {
 				if (pNotemap.containsKey(pn.ParentId)) {
 					pNotemap.get(pn.ParentId).add(pn);
@@ -259,7 +261,7 @@ global without sharing class PortalController {
 					pNotemap.put(pn.ParentId, new List<sObject>{pn});
 				}
 			}
-				
+
 			for (TF4SF__Documentation_Request__c dr : DReq.values()) {
 				if (pDocmap.containsKey(dr.TF4SF__Products__c)) {
 					pDocmap.get(dr.TF4SF__Products__c).add(dr);
@@ -299,10 +301,14 @@ global without sharing class PortalController {
 								for (TF4SF__Products__c prd : aProd.get(aid.Id)) {
 									gen.writeStartObject();
 										gen.writeStringField('Id', aid.Id);
-										if (aid.TF4SF__Sub_Product__c.contains('Checking') || aid.TF4SF__Sub_Product__c.contains('Savings') || aid.TF4SF__Sub_Product__c.contains('Certificates')) {
-											gen.writeStringField('Name', aid.App_Number__c);
-										} else {
-											gen.writeStringField('Name', aid.Meridian_Link_Number__c);  
+										if (prd.TF4SF__Product_Name__c == aid.TF4SF__Sub_Product__c) {
+											gen.writeStringField('Name', (aid.Meridian_Link_Number__c == null) ? '' :aid.Meridian_Link_Number__c);  
+										} else if (prd.TF4SF__Product_Name__c == aid.TF4SF__Primary_Offer__c) {
+											gen.writeStringField('Name', (aid.Meridian_Link_Number_CS1__c == null) ? '' :aid.Meridian_Link_Number_CS1__c);
+										} else if (prd.TF4SF__Product_Name__c == aid.TF4SF__Second_Offer__c) {
+											gen.writeStringField('Name', (aid.Meridian_Link_Number_CS2__c == null) ? '' :aid.Meridian_Link_Number_CS2__c);  
+										} else if (prd.TF4SF__Product_Name__c == aid.TF4SF__Third_Offer__c) {
+											gen.writeStringField('Name', (aid.Meridian_Link_Number_CS3__c == null) ? '' :aid.Meridian_Link_Number_CS3__c);  
 										}
 
 										gen.writeStringField('Email_Address__c', (aid.TF4SF__Email_Address__c == null) ? '' : aid.TF4SF__Email_Address__c);
@@ -311,15 +317,16 @@ global without sharing class PortalController {
 										if (aid.TF4SF__FullName_J2__c != null) { gen.writeStringField('FullName_J2__c', aid.TF4SF__FullName_J2__c); }
 										if (aid.TF4SF__FullName_J3__c != null) { gen.writeStringField('FullName_J3__c', aid.TF4SF__FullName_J3__c); }
 										gen.writeStringField('Application_Status__c', aid.TF4SF__Application_Status__c);
-										
+
 										System.debug('debugProdStatus: ' + aid.TF4SF__Primary_Product_Status__c);
 										String pStatus = (prd.TF4SF__Product_Type__c == 'Primary') ? aid.TF4SF__Primary_Product_Status__c :
 																					  (prd.TF4SF__Product_Type__c == 'Cross-sell 1') ? aid.TF4SF__Primary_Offer_Status__c :
 																					  (prd.TF4SF__Product_Type__c == 'Cross-sell 2') ? aid.TF4SF__Second_Offer_Status__c : 
 																					  (prd.TF4SF__Product_Type__c == 'Cross-sell 3') ? aid.TF4SF__Third_Offer_Status__c : '';
+
 										if (pStatus == 'Approved' || pStatus == 'Instant Approved') {
 											pStatus = 'Approved';
-										} else if(pStatus == 'Declined' || pStatus == 'Instant Declined') {
+										} else if (pStatus == 'Declined' || pStatus == 'Instant Declined') {
 											pStatus = 'Declined';
 										} else {
 											pStatus = 'Pending Review';
@@ -348,6 +355,7 @@ global without sharing class PortalController {
 										gen.writeStringField('Requested_Credit_Limit__c', (prd.TF4SF__Requested_Credit_Limit__c == null) ? '' : String.valueOf(prd.TF4SF__Requested_Credit_Limit__c));
 										gen.writeStringField('Requested_Loan_Amount__c', (prd.TF4SF__Requested_Loan_Amount__c == null) ? '' : String.valueOf(prd.TF4SF__Requested_Loan_Amount__c));
 										String rt;
+
 										if (prd.TF4SF__Rate__c != null) {
 											rt = String.valueof(prd.TF4SF__Rate__c).split('\\.')[0]+'.'+String.valueof(prd.TF4SF__Rate__c).split('\\.')[1].left(2);
 										} else {
@@ -357,6 +365,7 @@ global without sharing class PortalController {
 										gen.writeStringField('Rate__c', rt + '%');
 										//gen.writeStringField('Term__c', (prd.Term__c == null) ? '' : String.valueOf(prd.Term__c) + ' months');
 										gen.writeStringField('Term__c', (prd.TF4SF__Term__c == null) ? '' : String.valueOf(prd.TF4SF__Term__c));
+										gen.writeStringField('Requested_Term__c', (prd.Requested_Term__c == null) ? '' : String.valueOf(prd.Requested_Term__c));
 
 										if (stat == 'Submitted') {//if starts for submitted
 											if (pDocmap.containsKey(prd.Id)) { //Documentation Request records start
@@ -440,7 +449,7 @@ global without sharing class PortalController {
 							} else { // Just use the Application Object's details
 								gen.writeStartObject();
 									gen.writeStringField('Id', aid.Id);
-									gen.writeStringField('Name', aid.App_Number__c);
+									gen.writeStringField('Name', aid.Name);
 									gen.writeStringField('ProductName', aid.TF4SF__Sub_Product__c);
 									gen.writeStringField('Email_Address__c', (aid.TF4SF__Email_Address__c == null) ? '' : aid.TF4SF__Email_Address__c);
 									gen.writeStringField('Full_Name_PA__c', (aid.TF4SF__Full_Name_PA__c == null) ? '' : aid.TF4SF__Full_Name_PA__c);

@@ -1,7 +1,7 @@
 public with sharing class UXResumeAppButtonExtenstion {
 	public TF4SF__Application__c app{get; set;}
 	public String appId{get; set;}
-	
+
 	// The extension constructor initializes the private member
 	// variable mysObject by using the getRecord method from the standard
 	// controller.
@@ -23,8 +23,8 @@ public with sharing class UXResumeAppButtonExtenstion {
 
 			app.TF4SF__Primary_Product_Status__c = 'Approved';
 			app.Sub_Status__c = 'Approve';
-			updateRes = SendStatusFromCreditReport.CallUpdateApiToSendStatus(app.Id, app.ProductId__c, app.TF4SF__Sub_Product__c, status, 'ApplicationDetailPage');
-			system.debug('updateres: '+updateRes);
+			//updateRes = SendStatusFromCreditReport.CallUpdateApiToSendStatus(app.Id, app.ProductId__c, app.TF4SF__Sub_Product__c, status, 'ApplicationDetailPage');
+			System.debug('updateres: '+updateRes);
 			update app;
 		}
 
@@ -79,7 +79,8 @@ public with sharing class UXResumeAppButtonExtenstion {
 						TF4SF__Application__c app = new TF4SF__Application__c();
 						app.Id = appId;
 						app.TF4SF__Primary_Product_Status__c = prodStatMap.get(String.ValueOf(l.get('status'))).Product_Status__c;
-						app.Custom_Text44__c = String.ValueOf(l.get('account_id'));    
+						//app.Custom_Text44__c = String.ValueOf(l.get('account_id'));
+						System.debug('app UXResumeAppButtonExtenstion::::::: ' + app);
 						update app;
 					}
 				}

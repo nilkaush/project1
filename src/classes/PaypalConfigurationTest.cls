@@ -1,6 +1,6 @@
 @isTest
 private class PaypalConfigurationTest  {
-	static testMethod void PaypalConfiguration(){
+	static testMethod void PaypalConfiguration() {
 		Map<String, String> data = new Map<String, String>();
 		TF4SF__Application__c app1 = new TF4SF__Application__c();
 		app1.TF4SF__First_Name__c='Test Account';
