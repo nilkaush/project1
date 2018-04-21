@@ -7,43 +7,45 @@
     </types>
     <types>
         <members>AccountDetailsPageExtension</members>
-        <members>AccountVerifierCls</members>
         <members>AlfaPackAuthentication_Batch</members>
         <members>ApplicationHandler</members>
+        <members>ApplicationHandlerTest</members>
+        <members>ApplicationQueueHandler</members>
         <members>AsyncOnlineBankingWebservices</members>
         <members>AttachmentsRESTAPICustom</members>
         <members>Batch_StipulationsAPI</members>
         <members>BizDevLinksController</members>
+        <members>BizDevLinksControllerTest</members>
         <members>CancelExt</members>
         <members>ConfirmationPageExtension</members>
-        <members>ConsumerLoansSubmitToCore</members>
+        <members>CrossSellPageExtension</members>
         <members>CryptoHelper</members>
         <members>CustomerPromotionsController</members>
+        <members>CustomerPromotionsControllerTest</members>
         <members>DocuSignAPI</members>
         <members>DocusignAPI_Mock_Test</members>
         <members>DocusignAPI_test</members>
+        <members>DocusignAdditionalRecipients</members>
         <members>DocusignTemplate</members>
         <members>DocusignTemplateSigning</members>
         <members>DocusignTemplateSigning_Test</members>
         <members>DocusignTemplate_Test</members>
         <members>DriverLicenseScan</members>
+        <members>DriverLicenseScanMock</members>
+        <members>DriverLicenseScanTest</members>
         <members>EmploymentPageExtension</members>
         <members>IdentityPageExtension</members>
-        <members>IdentityPageExtension1</members>
-        <members>JSON2ApexParse</members>
         <members>JSONParseClass</members>
         <members>LogStorage</members>
         <members>MemberAccountListExt</members>
+        <members>MessagesAPI</members>
         <members>MockAttachmentResponseGenerator</members>
         <members>MockHttpResponseToken</members>
         <members>MockHttpResponseValidation</members>
         <members>MockHttpResponseValidationNegat</members>
-        <members>MultiProductSubmitToCore</members>
         <members>NotesTriggerTest</members>
-        <members>OFACReport</members>
         <members>OLBSimulator</members>
         <members>OOWAnswers</members>
-        <members>OOWAnswers1</members>
         <members>OOWCExtension</members>
         <members>OOWJSONGenerator</members>
         <members>ObjectPrefix</members>
@@ -53,7 +55,6 @@
         <members>OnlineBankingWebservices</members>
         <members>OnlineLinksController</members>
         <members>OnlineLinksController1</members>
-        <members>OnlineLinksControllerUX</members>
         <members>PayPalTransactionSave</members>
         <members>PaypalConfiguration</members>
         <members>PaypalConfigurationTest</members>
@@ -61,39 +62,38 @@
         <members>PersonalInfoPageExtension</members>
         <members>PortalController</members>
         <members>PortalControllerTest</members>
+        <members>ProductInformationController</members>
         <members>RASIntegration</members>
+        <members>RecursiveCheck</members>
         <members>ReviewSubmitExtension</members>
         <members>RoutingNumber</members>
         <members>RoutingNumberTest</members>
         <members>ScheduleAlfpackAuthentication</members>
         <members>SearchApplication</members>
+        <members>SearchMemResultsLTNG</members>
         <members>SearchMemberResults</members>
         <members>Search_Member</members>
-        <members>Search_Member1</members>
         <members>SendStatusFromCreditReport</members>
         <members>StartApplication</members>
-        <members>StartOfferExtension</members>
-        <members>StatusAPI</members>
         <members>StipulationsAPI</members>
         <members>SubmitApplicationController</members>
         <members>SubmitToCore</members>
-        <members>SubmitToCore2</members>
+        <members>SubmitToCoreHelper</members>
+        <members>SubmitToCoreHelperForFundingInfo</members>
+        <members>SubmitToCoreHelperForFundingInfo_Test</members>
+        <members>SubmitToCoreHelper_Test</members>
         <members>UXResumeAppButtonExtenstion</members>
-        <members>XMLParser</members>
         <members>apphand1Test</members>
         <members>apphandler1</members>
         <members>attachmentTest</members>
         <members>attachmentTriggerHandler</members>
-        <members>createMultiProdApp</members>
         <members>createProdApp</members>
         <members>getPostalAPIKey</members>
         <members>getStartedPageExtension</members>
-        <members>hardCode</members>
         <members>lyonRoutingNumberValidatTest</members>
         <members>lyonRoutingNumberValidator</members>
         <members>notesTriggerHandler</members>
         <members>onlinePageControllerNew</members>
-        <members>updateProdApp</members>
         <name>ApexClass</name>
     </types>
     <types>
