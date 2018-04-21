@@ -13,12 +13,12 @@
         <members>*</members>
         <name>Role</name>
     </types>
-    <!--types>
+    <types>
         <members>ApplicationTrigger</members>
         <members>AttachmentTrigger</members>
         <members>EmailNotification</members>
         <members>NoteTrigger</members>
         <name>ApexTrigger</name>
-    </types-->    
+    </types>    
     <version>36.0</version>
 </Package>
